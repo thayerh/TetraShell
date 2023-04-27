@@ -49,6 +49,13 @@ int main(int argc, char** argv){
     printf("the ultimate Tetris quicksave hacking tool!\n");
     printf("Enter the path to the quicksave you'd like to begin hacking: ");
     fgets(savePath, MAX_LINE_LENGTH, stdin);
+    //K.P: Remove the new line from the end of the input. 
+        for (int i = 0; i < MAX_LINE_LENGTH; i++) {
+            if (savePath[i] == '\n') {
+                savePath[i] = '\0';
+                break;
+            }
+        }
     printf("Enter your command below to get started: \n");
     while(true){
         char *tokens[MAX_LINE_LENGTH] = {0}; 
@@ -56,16 +63,19 @@ int main(int argc, char** argv){
         printf("tetrashell> ");
         //K.P: Gets the userInput from stdin.
         fgets(userInput, MAX_LINE_LENGTH, stdin);
-        //K.P: Use strtok to split the userInput into tokens delimited by spaces
+        //K.P: Remove the new line from the end of the input.
+        for (int i = 0; i < MAX_LINE_LENGTH; i++) {
+            if (userInput[i] == '\n') {
+                userInput[i] = '\0';
+                break;
+            }
+        }
+        //K.P: Use strtok to split the userInput into tokens delimited by spaces.
         char *token = strtok(userInput, " ");
         while (token != NULL) {
             tokens[tokenCount++] = token;
             token = strtok(NULL, " ");
         }
-
-        printf("%s", tokens[0]);
-        int comp = strcmp(tokens[0], "check");
-        printf("%d\n", comp);
 
         tokens[tokenCount] = NULL;
         if((strcmp(tokens[0], "exit")) == 0){
@@ -101,9 +111,6 @@ int main(int argc, char** argv){
                     fprintf(stderr, "Error: too many arguments given. Only need one.\n");
                 }
                 char *checkArgs[] = {checkPath, savePath, NULL}; // Pass an array of arguments
-                // printf("%s", checkArgs[0]);
-                // printf("%s", checkArgs[1]);
-                printf("%s", checkPath);
                 st = execve(checkPath, checkArgs, NULL); 
                 if (st == -1){
                     perror("execve");
@@ -125,7 +132,6 @@ int main(int argc, char** argv){
                     fprintf(stderr, "Error: Modify needs 2 commands.\n");
                 }
                 char *modifyArgs[] = {modifyPath, tokens[1], tokens[2], savePath, NULL};
-                printf("Debug: modifyPath=%s, tokens[1]=%s, tokens[2]=%s, savePath=%s\n", modifyPath, tokens[1], tokens[2], savePath);
                 st = execve(modifyPath, modifyArgs, NULL); 
                 if (st == -1){
                     perror("execve");

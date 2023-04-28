@@ -58,7 +58,7 @@ int main(int argc, char** argv){
                 break;
             }
         }
-    
+    //K.P: Gets the first four characters of the given save. if longer, it will be abbreviated.
     char firstFour[8];
     if (strlen(savePath) > 4) {
         strncpy(firstFour, savePath, 4); // Copy first 4 characters
@@ -79,6 +79,7 @@ int main(int argc, char** argv){
         int tokenCount = 0;
         printf("%s",userName);
         printf("@TShell");
+        //K.P: Checks if terminal can support color. If so, prints the save file name in green.
         if(strcmp(getenv("TERM"), "xterm-256color") == 0){
             printf("\033[32m[%s]\033[0m>", firstFour);
         }

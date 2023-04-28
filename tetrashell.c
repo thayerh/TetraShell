@@ -16,20 +16,38 @@ char* modifyPath = "/playpen/a5/modify";
 
 char inputCheck(char *expected, char *input);
 
-void printTitle(){
-    //K.P: Title for the TetraShell
+
+void print_title(int num_spaces) {
+    printf("\033[2J\033[H"); // Clear the screen and move the cursor to the top-left corner
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
     printf("Welcome to...\n");
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
     printf("  ______     __             _____ __         ____\n");
-    usleep(62500);
+    usleep(1200);
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
     printf(" /_  __/__  / /__________ _/ ___// /_  ___  / / /\n");
-    usleep(62500);
+    usleep(1200);
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
     printf("  / / / _ \\/ __/ ___/ __ /\\__ \\/ __  \\/ _ \\/ / / \n");
-    usleep(62500);
+    usleep(1200);
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
     printf(" / / /  __/ /_/ /  / /_/ /___/ / / / /  __/ / /  \n");
-    usleep(62500);
+    usleep(1200);
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
     printf("/_/  \\___/\\__/_/   \\___//____/_/ /_/\\___/ _/_/   \n");
-    usleep(62500);
-    printf("\n");
+    usleep(1200);
 }
 
 
@@ -47,7 +65,14 @@ int main(int argc, char** argv){
         return 1;
     }
 
-    printTitle();
+    int start_col = 80;
+    int end_col = 0;
+
+    for (int col = start_col; col >= end_col; --col) {
+        print_title(col);
+        usleep(10); // Adjust this value to change the speed of the animation
+    }
+
     printf("the ultimate Tetris quicksave hacking tool!\n");
     printf("Enter the path to the quicksave you'd like to begin hacking: ");
     fgets(savePath, MAX_LINE_LENGTH, stdin);
@@ -81,7 +106,7 @@ int main(int argc, char** argv){
         printf("@TShell");
         //K.P: Checks if terminal can support color. If so, prints the save file name in green.
         if(strcmp(getenv("TERM"), "xterm-256color") == 0){
-            printf("\033[32m[%s]\033[0m>", firstFour);
+            printf("\033[32m[%s]\033[0m> ", firstFour);
         }
         else{
             printf("[%s]>", firstFour);

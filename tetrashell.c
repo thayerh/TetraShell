@@ -13,6 +13,7 @@ char* checkPath = "/playpen/a5/check";
 char* modifyPath = "/playpen/a5/modify";
 
 
+char inputCheck(char *expected, char *input);
 
 void printTitle(){
     //K.P: Title for the TetraShell
@@ -32,7 +33,7 @@ void printTitle(){
 
 
 int main(int argc, char** argv){
-    
+
     //K.P: initializes the savePath and userInput memory. Initialize the tokens array to split the userInput into chunks.
     char *savePath = malloc(MAX_LINE_LENGTH);
     if (savePath == NULL) {
@@ -49,7 +50,7 @@ int main(int argc, char** argv){
     printf("the ultimate Tetris quicksave hacking tool!\n");
     printf("Enter the path to the quicksave you'd like to begin hacking: ");
     fgets(savePath, MAX_LINE_LENGTH, stdin);
-    //K.P: Remove the new line from the end of the input. 
+    //K.P: Remove the new line from the end of the input.
         for (int i = 0; i < MAX_LINE_LENGTH; i++) {
             if (savePath[i] == '\n') {
                 savePath[i] = '\0';
@@ -58,7 +59,7 @@ int main(int argc, char** argv){
         }
     printf("Enter your command below to get started: \n");
     while(true){
-        char *tokens[MAX_LINE_LENGTH] = {0}; 
+        char *tokens[MAX_LINE_LENGTH] = {0};
         int tokenCount = 0;
         printf("tetrashell> ");
         //K.P: Gets the userInput from stdin.
@@ -78,18 +79,19 @@ int main(int argc, char** argv){
         }
 
         tokens[tokenCount] = NULL;
-        if((strcmp(tokens[0], "exit")) == 0){
+        if(inputCheck("exit", tokens[0])){
             exit(1);
         }
 
-        int st; 
-        if(strcmp(tokens[0], "recover") == 0){
+        int st;
+        //T.H: For easiest inputCheck impl, if first letter of input is r, need to differentiate between rank and recover
+        if(tokens[0][0]=='r' && inputCheck("ecover", &tokens[0][1])){
             pid_t pid = fork();
             if (pid < 0) {
                 perror("fork");
                 return 1;
-            } else if (pid == 0){ 
-                st = execve(recoverPath, tokens, NULL); 
+            } else if (pid == 0){
+                st = execve(recoverPath, tokens, NULL);
                 if(st == -1){
                     perror("execve");
                     exit(1); //K.P: Kill the child process
@@ -100,18 +102,17 @@ int main(int argc, char** argv){
                 waitpid(pid, &status, 0);
             }
         }
-
-        if(strcmp(tokens[0], "check") == 0){
+        if(inputCheck("check", tokens[0])){
             pid_t pid = fork();
             if (pid < 0) {
                 perror("fork");
                 return 1;
-            } else if (pid == 0){ 
+            } else if (pid == 0){
                 if(tokenCount != 1){
                     fprintf(stderr, "Error: too many arguments given. Only need one.\n");
                 }
                 char *checkArgs[] = {checkPath, savePath, NULL}; // Pass an array of arguments
-                st = execve(checkPath, checkArgs, NULL); 
+                st = execve(checkPath, checkArgs, NULL);
                 if (st == -1){
                     perror("execve");
                     exit(1); //K.P: Kill the child process
@@ -121,7 +122,8 @@ int main(int argc, char** argv){
                 waitpid(pid, &status, 0);
             }
         }
-        if(strcmp(tokens[0], "modify") == 0){
+
+        if(inputCheck("modify", tokens[0])){
             pid_t pid = fork();
             if (pid < 0) {
                 perror("fork");
@@ -132,18 +134,19 @@ int main(int argc, char** argv){
                     fprintf(stderr, "Error: Modify needs 2 commands.\n");
                 }
                 char *modifyArgs[] = {modifyPath, tokens[1], tokens[2], savePath, NULL};
-                st = execve(modifyPath, modifyArgs, NULL); 
+                st = execve(modifyPath, modifyArgs, NULL);
                 if (st == -1){
                     perror("execve");
                     exit(1); //K.P: Kill the child process
                 }
             }
             else{
-                int status; 
+                int status;
                 waitpid(pid, &status, 0);
             }
         }
-        if (strcmp(tokens[0], "rank") == 0) {
+        //T.H: Special handling of rank check due to recover also starting with an 'r'
+        if(tokens[0][0]=='r' && inputCheck("ank", &tokens[0][1])){
             if (tokenCount != 3) {
                 fprintf(stderr, "Error: Rank needs 2 commands.\n");
             }
@@ -156,7 +159,7 @@ int main(int argc, char** argv){
             }
             //K.P: Fork for the rank process.
             pid_t rank_pid = fork();
-            
+
             if (rank_pid < 0) {
                 perror("fork");
                 exit(1);
@@ -187,3 +190,26 @@ int main(int argc, char** argv){
      }
  }
 
+
+char inputCheck(char *expected, char *input) {
+        int i = 0;
+        char nc = '\0';
+        char valid = 1;
+        //T.H: Go through chars in expected and compare them to input if input still has chars left.
+        //T.H: If input runs out of chars early with at least the first char matching the first char of expected, break loop
+        while (expected[i]!=nc && valid) {
+                if (input[i]==nc) {
+                        valid = (i==0) ? 0 : 1;
+                        break;
+                } else if (input[i]!=expected[i]) {
+                        valid = 0;
+                        break;
+                }
+                i++;
+        }
+        //T.H: If loop ends when expected[i] is null char, need to make sure valid[i] is also null char
+        if (expected[i]==nc) {
+                valid = (expected[i]==nc && expected[i]==input[i] && valid) ? 1 : 0;
+        }
+        return valid;
+}

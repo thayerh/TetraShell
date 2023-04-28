@@ -14,6 +14,8 @@ char* modifyPath = "/playpen/a5/modify";
 
 
 char inputCheck(char *expected, char *input);
+char *getFirstFour(const char *str);
+
 
 
 void print_title(int num_spaces) {
@@ -84,20 +86,6 @@ int main(int argc, char** argv){
                 break;
             }
         }
-    //K.P: Gets the first four characters of the given save. if longer, it will be abbreviated.
-    char firstFour[8];
-    if (strlen(savePath) > 4) {
-        strncpy(firstFour, savePath, 4); // Copy first 4 characters
-        firstFour[4] = '.';
-        firstFour[5] = '.';
-        firstFour[6] = '.';
-        firstFour[7] = '\0'; // Add the null terminator
-        printf("The first four characters are: %s\n", firstFour);
-    } else {
-        strncpy(firstFour, savePath, 4);
-        firstFour[4] = '\0';
-    }
-
 
     printf("Enter your command below to get started: \n");
     while(true){
@@ -107,10 +95,10 @@ int main(int argc, char** argv){
         printf("@TShell");
         //K.P: Checks if terminal can support color. If so, prints the save file name in green.
         if(strcmp(getenv("TERM"), "xterm-256color") == 0){
-            printf("\033[32m[%s]\033[0m> ", firstFour);
+            printf("\033[32m[%s]\033[0m> ", getFirstFour(savePath));
         }
         else{
-            printf("[%s]>", firstFour);
+            printf("[%s]>", getFirstFour(savePath));
         }
         //K.P: Gets the userInput from stdin.
         fgets(userInput, MAX_LINE_LENGTH, stdin);
@@ -150,6 +138,18 @@ int main(int argc, char** argv){
             else{
                 int status;
                 waitpid(pid, &status, 0);
+            }
+        }
+        if(inputCheck("switch", tokens[0])){
+            if(tokenCount != 2){
+                fprintf(stderr, "Need new quicksave path.\n");
+            }
+            else {
+                char oldPath[MAX_LINE_LENGTH];
+                strncpy(oldPath, savePath, MAX_LINE_LENGTH);
+                strncpy(savePath, tokens[1], MAX_LINE_LENGTH);
+                savePath[MAX_LINE_LENGTH - 1] = '\0'; //K.P: Ensure null termination
+                printf("Switch current quicksave from %s to %s.\n", oldPath, savePath);
             }
         }
         if(inputCheck("check", tokens[0])){
@@ -263,3 +263,21 @@ char inputCheck(char *expected, char *input) {
         }
         return valid;
 }
+
+    //K.P: Gets the first four characters of the given save. if longer, it will be abbreviated.
+char *getFirstFour(const char *str){
+    static char firstFour[8];
+    if (strlen(str) > 4) {
+        strncpy(firstFour, str, 4); // Copy first 4 characters
+        firstFour[4] = '.';
+        firstFour[5] = '.';
+        firstFour[6] = '.';
+        firstFour[7] = '\0'; // Add the null terminator
+        return firstFour;
+    } else {
+        strncpy(firstFour, str, 4);
+        firstFour[4] = '\0';
+        return firstFour;
+    }
+}
+

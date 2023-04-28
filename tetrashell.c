@@ -13,6 +13,7 @@ char* checkPath = "/playpen/a5/check";
 char* modifyPath = "/playpen/a5/modify";
 
 
+
 char inputCheck(char *expected, char *input);
 
 void printTitle(){
@@ -33,7 +34,7 @@ void printTitle(){
 
 
 int main(int argc, char** argv){
-
+    char* userName = getlogin();
     //K.P: initializes the savePath and userInput memory. Initialize the tokens array to split the userInput into chunks.
     char *savePath = malloc(MAX_LINE_LENGTH);
     if (savePath == NULL) {
@@ -57,11 +58,33 @@ int main(int argc, char** argv){
                 break;
             }
         }
+    
+    char firstFour[8];
+    if (strlen(savePath) > 4) {
+        strncpy(firstFour, savePath, 4); // Copy first 4 characters
+        firstFour[4] = '.';
+        firstFour[5] = '.';
+        firstFour[6] = '.';
+        firstFour[7] = '\0'; // Add the null terminator
+        printf("The first four characters are: %s\n", firstFour);
+    } else {
+        strncpy(firstFour, savePath, 4);
+        firstFour[4] = '\0';
+    }
+
+
     printf("Enter your command below to get started: \n");
     while(true){
         char *tokens[MAX_LINE_LENGTH] = {0};
         int tokenCount = 0;
-        printf("tetrashell> ");
+        printf("%s",userName);
+        printf("@TShell");
+        if(strcmp(getenv("TERM"), "xterm-256color") == 0){
+            printf("\033[32m[%s]\033[0m>", firstFour);
+        }
+        else{
+            printf("[%s]>", firstFour);
+        }
         //K.P: Gets the userInput from stdin.
         fgets(userInput, MAX_LINE_LENGTH, stdin);
         //K.P: Remove the new line from the end of the input.

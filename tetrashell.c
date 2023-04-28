@@ -145,6 +145,7 @@ int main(int argc, char** argv){
                 fprintf(stderr, "Need new quicksave path.\n");
             }
             else {
+                //K.P: copies new path into original buffer and then prints the switch. 
                 char oldPath[MAX_LINE_LENGTH];
                 strncpy(oldPath, savePath, MAX_LINE_LENGTH);
                 strncpy(savePath, tokens[1], MAX_LINE_LENGTH);
@@ -264,15 +265,15 @@ char inputCheck(char *expected, char *input) {
         return valid;
 }
 
-    //K.P: Gets the first four characters of the given save. if longer, it will be abbreviated.
+//K.P: Gets the first four characters of the given save. if longer, it will be abbreviated.
 char *getFirstFour(const char *str){
     static char firstFour[8];
     if (strlen(str) > 4) {
-        strncpy(firstFour, str, 4); // Copy first 4 characters
+        strncpy(firstFour, str, 4); //K.P: Copy first 4 characters
         firstFour[4] = '.';
         firstFour[5] = '.';
         firstFour[6] = '.';
-        firstFour[7] = '\0'; // Add the null terminator
+        firstFour[7] = '\0'; //K.P: Add the null terminator
         return firstFour;
     } else {
         strncpy(firstFour, str, 4);

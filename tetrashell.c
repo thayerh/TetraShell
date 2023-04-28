@@ -16,7 +16,7 @@ char* modifyPath = "/playpen/a5/modify";
 
 char inputCheck(char *expected, char *input);
 char *getFirstFour(const char *str);
-
+void printBoard(TetrisGameState tGame, char* savePath);
 
 
 void print_title(int num_spaces) {
@@ -103,7 +103,6 @@ int main(int argc, char** argv){
 
         fclose(file);
 // Should try to validate quicksave
-
 
     printf("Enter your command below to get started: \n");
     while(true){
@@ -261,6 +260,9 @@ int main(int argc, char** argv){
                 waitpid(rank_pid, &status, 0);
             }
         }
+        if (inputCheck("visualize", tokens[0])) {
+                printBoard(tGame, savePath);
+        }
      }
  }
 
@@ -304,3 +306,40 @@ char *getFirstFour(const char *str){
         return firstFour;
     }
 }
+
+//T.H: Prints the game board passed through tGame
+void printBoard(TetrisGameState tGame, char* savePath) {
+        int i = 0;
+        int m;
+        //T.H: Print first 2 lines
+        printf("Visualizing savefile %s\n", savePath);
+        printf("+---- Gameboard -----+   +--- Next ----+\n");
+        //T.H: Go through board from tGame and print to the console
+        for (int r = 0; r<20; r++) {
+                //T.H: Beginning and ends of the lines don't change, look into the board from tGame for middle parts
+                putchar('|');
+                for (int c = 0; c<10; c++) {
+                        putchar(tGame.board[i]);
+                        putchar(tGame.board[i++]);
+                }
+                putchar('|');
+                //T.H: Make the next piece part
+                if (r<7) {
+                        if (r==0 || r==5) {
+                                printf("   |             |");
+                        } else if (r==6) {
+                                printf("   +-------------+");
+                        } else {
+                                printf("   |  ");
+                                for (m = 0; m<4; m++) {
+                                        putchar(tetris_pieces[tGame.current_piece][((r-1)*4) + m]);
+                                        putchar(tetris_pieces[tGame.current_piece][((r-1)*4) + m]);
+                                }
+                                printf("   |");
+                        }
+                }
+                putchar('\n');
+        }
+        printf("+--------------------+\n");
+}
+

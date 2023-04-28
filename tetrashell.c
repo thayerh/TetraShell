@@ -18,7 +18,7 @@ char inputCheck(char *expected, char *input);
 
 
 void print_title(int num_spaces) {
-    printf("\033[2J\033[H"); // Clear the screen and move the cursor to the top-left corner
+    printf("\033[2J\033[H"); //K.P: Clears the screen and move the cursor to the top-left corner
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
     }
@@ -65,12 +65,13 @@ int main(int argc, char** argv){
         return 1;
     }
 
+    //K.P allows for the animation of the logo. Starts from the right side (column 80) and reprints the title until end_col = col.
     int start_col = 80;
     int end_col = 0;
 
     for (int col = start_col; col >= end_col; --col) {
         print_title(col);
-        usleep(10); // Adjust this value to change the speed of the animation
+        usleep(10); 
     }
 
     printf("the ultimate Tetris quicksave hacking tool!\n");

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <stdbool.h>
+#include "tetris.h"
 #define MAX_LINE_LENGTH 1024
 
 
@@ -73,7 +74,7 @@ int main(int argc, char** argv){
 
     for (int col = start_col; col >= end_col; --col) {
         print_title(col);
-        usleep(10); 
+        usleep(10);
     }
 
     printf("the ultimate Tetris quicksave hacking tool!\n");
@@ -87,19 +88,41 @@ int main(int argc, char** argv){
             }
         }
 
+        //T.H: Open quicksave for use throughout program
+        FILE *file = fopen(savePath, "rb");
+        if (file == NULL) {
+                perror("fopen failed");
+                exit(1);
+        }
+
+        TetrisGameState tGame;
+        if ((fread(&tGame, sizeof(tGame), 1, file)==0)) {
+                perror("fread failed");
+                exit(1);
+        }
+
+        fclose(file);
+// Should try to validate quicksave
+
+
     printf("Enter your command below to get started: \n");
     while(true){
+
+
         char *tokens[MAX_LINE_LENGTH] = {0};
         int tokenCount = 0;
         printf("%s",userName);
         printf("@TShell");
         //K.P: Checks if terminal can support color. If so, prints the save file name in green.
+        //T.H: Also prints game save score and lines
         if(strcmp(getenv("TERM"), "xterm-256color") == 0){
-            printf("\033[32m[%s]\033[0m> ", getFirstFour(savePath));
+            printf("\033[32m[%s][%d/%d]\033[0m> ", getFirstFour(savePath), tGame.score, tGame.lines);
         }
         else{
-            printf("[%s]>", getFirstFour(savePath));
+            printf("[%s][%d/%d]>", getFirstFour(savePath), tGame.score, tGame.lines);
         }
+
+
         //K.P: Gets the userInput from stdin.
         fgets(userInput, MAX_LINE_LENGTH, stdin);
         //K.P: Remove the new line from the end of the input.
@@ -145,7 +168,7 @@ int main(int argc, char** argv){
                 fprintf(stderr, "Need new quicksave path.\n");
             }
             else {
-                //K.P: copies new path into original buffer and then prints the switch. 
+                //K.P: copies new path into original buffer and then prints the switch.
                 char oldPath[MAX_LINE_LENGTH];
                 strncpy(oldPath, savePath, MAX_LINE_LENGTH);
                 strncpy(savePath, tokens[1], MAX_LINE_LENGTH);
@@ -281,4 +304,3 @@ char *getFirstFour(const char *str){
         return firstFour;
     }
 }
-

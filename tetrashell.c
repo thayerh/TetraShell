@@ -13,7 +13,6 @@ char* checkPath = "/playpen/a5/check";
 char* modifyPath = "/playpen/a5/modify";
 
 
-
 char inputCheck(char *expected, char *input);
 
 
@@ -65,8 +64,9 @@ int main(int argc, char** argv){
         return 1;
     }
 
+
     //K.P allows for the animation of the logo. Starts from the right side (column 80) and reprints the title until end_col = col.
-    int start_col = 80;
+    int start_col = 40;
     int end_col = 0;
 
     for (int col = start_col; col >= end_col; --col) {

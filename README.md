@@ -17,3 +17,5 @@ Additional Components in Progress:
 Stuff That Needs to get Done:
 -  Find some way to check for valid quicksaves when passing them in
 -  Free all alloced memory when program exits
+
+Team: Thayer Hicks and Kishan Patel

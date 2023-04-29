@@ -18,6 +18,7 @@ void print_title(int num_spaces);
 char inputCheck(char *expected, char *input);
 char *getFirstFour(const char *str);
 void printBoard(TetrisGameState tGame, char* savePath);
+bool vailidateSave(char* savePath);
 
 
 int main(int argc, char** argv){
@@ -70,11 +71,13 @@ int main(int argc, char** argv){
 
         fclose(file);
 
-        //TH: init array of previous modifies
-        TetrisGameState *pastGames;
-        int numPast = 0;
-        int numAlloc = 0;
-// Should try to validate quicksave
+    //TH: init array of previous modifies
+    TetrisGameState *pastGames;
+    int numPast = 0;
+    int numAlloc = 0;
+
+
+
 
     printf("Enter your command below to get started: \n");
     while(true){
@@ -84,9 +87,16 @@ int main(int argc, char** argv){
         printf("%s",userName);
         printf("@TShell");
         //K.P: Checks if terminal can support color. If so, prints the save file name in green.
-        //TH: Also prints game save score and lines
-        if(strcmp(getenv("TERM"), "xterm-256color") == 0){
-            printf("\033[32m[%s][%u/%u]\033[0m> ", getFirstFour(savePath), tGame.score, tGame.lines);
+        //T.H: Also prints game save score and lines
+        bool saveIsValid = vailidateSave(savePath);
+        if (strcmp(getenv("TERM"), "xterm-256color") == 0) {
+            if (saveIsValid) {
+                //K.P: Print in green if save is valid
+                printf("\033[32m[%s][%u/%u]\033[0m> ", getFirstFour(savePath), tGame.score, tGame.lines);
+            } else {
+                //K.P: Print in red if save is not valid
+                printf("\033[31m[%s][%u/%u]\033[0m> ", getFirstFour(savePath), tGame.score, tGame.lines);
+            }
         }
         else{
             printf("[%s][%u/%u]>", getFirstFour(savePath), tGame.score, tGame.lines);
@@ -167,7 +177,7 @@ int main(int argc, char** argv){
                 if(tokenCount != 1){
                     fprintf(stderr, "Error: too many arguments given. Only need one.\n");
                 }
-                char *checkArgs[] = {checkPath, savePath, NULL}; // Pass an array of arguments
+                char *checkArgs[] = {checkPath, savePath, NULL}; 
                 st = execve(checkPath, checkArgs, NULL);
                 if (st == -1){
                     perror("execve");
@@ -406,3 +416,59 @@ void printBoard(TetrisGameState tGame, char* savePath) {
         }
         printf("+--------------------+\n");
 }
+
+bool vailidateSave(char* savePath){
+    //K.P: Validates the given save. 
+    int fd[2];
+    if (pipe(fd) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        return 1;
+    } else if (pid == 0) {
+        close(fd[0]); //K.P: Close read end of the pipe
+        dup2(fd[1], STDOUT_FILENO); // Redirect stdout to write end of the pipe
+
+        char *checkArgs[] = {checkPath, savePath, NULL};
+        int st = execve(checkPath, checkArgs, NULL);
+        if (st == -1) {
+            perror("execve");
+            exit(1);
+        }
+    } else {
+        close(fd[1]); //K.P: Close write end of the pipe
+
+        int status;
+        waitpid(pid, &status, 0);
+
+        //K.P: Read from the pipe and store the output in a char* buffer
+        char *checkOutput = malloc(MAX_LINE_LENGTH);
+        ssize_t bytesRead;
+        while ((bytesRead = read(fd[0], checkOutput, MAX_LINE_LENGTH)) > 0) {
+            checkOutput[bytesRead] = '\0';
+        }
+
+        bool saveIsValid; 
+        char *legit = "legitmate";
+        char *notLegit = "illegitimate";
+
+        char *goodSave = strstr(checkOutput, legit);
+        char *badSave = strstr(checkOutput, notLegit);
+
+        if(goodSave){
+            saveIsValid = true;
+        }
+        else if(badSave){
+            saveIsValid = false;
+        }
+        //K.P: Close read end of the pipe and free the memory
+        close(fd[0]);
+        free(checkOutput);
+        return saveIsValid;
+    }
+}
+

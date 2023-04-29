@@ -6,9 +6,11 @@ Additional Components Implemented:
 -  Switch (5)
 -  Visualize (15)
 -  Basic Save Info (5)
+  - Also prints if save file is legitimate or not.
 -  Undo (15)
 -  Quick-Rank (5)
 -  Imporoved Prompt(7)
+    - Also added if the given save file is illegal it will print in red, otherwise green. 
 
 
 Additional Components in Progress:

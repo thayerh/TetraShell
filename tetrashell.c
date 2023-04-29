@@ -1,3 +1,6 @@
+// I, Kishan Patel (730477803), pledge that I have neither given nor received unauthorized aid on this assignment.
+// I, Thayer Hicks (730475597), pledge that I have neither given nor received unauthorized aid on this assignment.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

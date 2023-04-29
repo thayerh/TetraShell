@@ -1,13 +1,15 @@
 // I, Kishan Patel (730477803), pledge that I have neither given nor received unauthorized aid on this assignment.
 // I, Thayer Hicks (730475597), pledge that I have neither given nor received unauthorized aid on this assignment.
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <sys/wait.h>
-#include <stdbool.h>
+#include <time.h>
+#include <unistd.h>
 #include "tetris.h"
+
 #define MAX_LINE_LENGTH 1024
 
 
@@ -145,6 +147,28 @@ int main(int argc, char** argv){
                 waitpid(pid, &status, 0);
             }
         }
+       if(inputCheck("help", tokens[0])) {
+            if(inputCheck("check", tokens[1])) {
+                printf("This command calls the `check` program with the current "
+                    "quicksave to verify if it will pass legitimacy checks.\n");
+            }
+            if(inputCheck("rank", tokens[1])) {
+                printf("Rank the current quicksave with a database of other saves. "
+                    "Input (Rank) (Score or Lines) and number of lines to return.\n");
+            }
+            if(inputCheck("modify", tokens[1])) {
+                printf("Modifies the current save. Input (Modify) (Score or Lines) "
+                    "(Number to set value to)\n");
+            }
+            if(inputCheck("switch", tokens[1])) {
+                printf("Switches the current save to the one you input. Input (Switch) (Save path)\n");
+            }
+            if(inputCheck("info", tokens[1])) {
+                printf("Prints the info of the given save.\n");
+            }
+        }
+
+
         if(inputCheck("switch", tokens[0])){
             if(tokenCount != 2){
                 fprintf(stderr, "Need new quicksave path.\n");
@@ -480,5 +504,16 @@ bool vailidateSave(char* savePath){
         free(checkOutput);
         return saveIsValid;
     }
+}
+
+void train(){
+    //K.P: Seed the rand function with the current time. 
+    //K.P: This allows for a more random assortment of numbers because the time is constantly changing. 
+    srand(time(NULL));
+    //K.P: Generate the random number in Hex.
+    unsigned int random_number = rand() % 0x100000000;
+
+    
+
 }
 

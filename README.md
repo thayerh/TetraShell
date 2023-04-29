@@ -6,6 +6,7 @@ Additional Components Implemented:
 -  Switch (5)
 -  Visualize (15)
 -  Basic Save Info (5)
+-  Undo (15)  
 
 
 Additional Components in Progress:

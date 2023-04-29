@@ -12,4 +12,4 @@ Additional Components in Progress:
   Imporoved Prompt(7)
   
   
-  Help (7)
+  Help (7) (Probably best implemented at the end when we know all the functions we've created)

@@ -13,3 +13,7 @@ Additional Components in Progress:
   
   
   Help (7) (Probably best implemented at the end when we know all the functions we've created)
+  
+Stuff That Needs to get Done:
+  Find some way to check for valid quicksaves when passing them in
+  Free all alloced memory when program exits

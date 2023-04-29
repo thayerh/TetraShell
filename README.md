@@ -5,10 +5,11 @@ Additional Components Implemented:
   Short Commands (5)
   Switch (5)
   Visualize (15)
+  Basic Save Info (5)
 
 
 Additional Components in Progress:
   Imporoved Prompt(7)
   
-  Basic Save Info(5)
+  
   Help (7)

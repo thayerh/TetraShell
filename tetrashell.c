@@ -55,7 +55,7 @@ int main(int argc, char** argv){
             }
         }
 
-        //T.H: Open quicksave for use throughout program
+        //TH: Open quicksave for use throughout program
         FILE *file = fopen(savePath, "rb");
         if (file == NULL) {
                 perror("fopen failed");
@@ -69,23 +69,27 @@ int main(int argc, char** argv){
         }
 
         fclose(file);
+
+        //TH: init array of previous modifies
+        TetrisGameState *pastGames;
+        int numPast = 0;
+        int numAlloc = 0;
 // Should try to validate quicksave
 
     printf("Enter your command below to get started: \n");
     while(true){
-
 
         char *tokens[MAX_LINE_LENGTH] = {0};
         int tokenCount = 0;
         printf("%s",userName);
         printf("@TShell");
         //K.P: Checks if terminal can support color. If so, prints the save file name in green.
-        //T.H: Also prints game save score and lines
+        //TH: Also prints game save score and lines
         if(strcmp(getenv("TERM"), "xterm-256color") == 0){
-            printf("\033[32m[%s][%d/%d]\033[0m> ", getFirstFour(savePath), tGame.score, tGame.lines);
+            printf("\033[32m[%s][%u/%u]\033[0m> ", getFirstFour(savePath), tGame.score, tGame.lines);
         }
         else{
-            printf("[%s][%d/%d]>", getFirstFour(savePath), tGame.score, tGame.lines);
+            printf("[%s][%u/%u]>", getFirstFour(savePath), tGame.score, tGame.lines);
         }
 
 
@@ -111,7 +115,7 @@ int main(int argc, char** argv){
         }
 
         int st;
-        //T.H: For easiest inputCheck impl, if first letter of input is r, need to differentiate between rank and recover
+        //TH: For easiest inputCheck impl, if first letter of input is r, need to differentiate between rank and recover
         if(tokens[0][0]=='r' && inputCheck("ecover", &tokens[0][1])){
             pid_t pid = fork();
             if (pid < 0) {
@@ -195,9 +199,27 @@ int main(int argc, char** argv){
             else{
                 int status;
                 waitpid(pid, &status, 0);
+                //TH: Save previous tGame
+                numPast++;
+                if (numPast>numAlloc) {
+                        pastGames = realloc(pastGames, 2 * numPast * sizeof(TetrisGameState));
+                        numAlloc = 2 * numPast;
+                }
+                pastGames[numPast - 1] = tGame;
+                //TH: Make tGame reflect modified game
+                file = fopen(savePath, "rb");
+                if (file==NULL) {
+                        perror("fopen failed");
+                        exit(1);
+                }
+                if (fread(&tGame, sizeof(tGame), 1, file)==0) {
+                        perror("fread failed");
+                        exit(1);
+                }
+                fclose(file);
             }
         }
-        //T.H: Special handling of rank check due to recover also starting with an 'r'
+        //TH: Special handling of rank check due to recover also starting with an 'r'
         if(tokens[0][0]=='r' && inputCheck("ank", &tokens[0][1])){
             if (tokenCount != 3) {
                 fprintf(stderr, "Error: Rank needs 2 commands.\n");
@@ -240,10 +262,33 @@ int main(int argc, char** argv){
             }
         }
         if (inputCheck("visualize", tokens[0])) {
+                //TH: call printBoard function to print the board
                 printBoard(tGame, savePath);
         }
-     }
- }
+        if (inputCheck("info", tokens[0])) {
+                //TH: Print current file, score, lines
+                printf("Current savefile: %s\n", savePath);
+                printf("Score: %u\n", tGame.score);
+                printf("Lines: %u\n", tGame.lines);
+        }
+        if (inputCheck("undo", tokens[0])) {
+                //TH: If there is a previous file, use it
+                if (numPast>0) {
+                        tGame = pastGames[--numPast];
+                        file = fopen(savePath, "w");
+                        if (file==NULL) {
+                                perror("fopen failed");
+                                exit(1);
+                        }
+                        if (fwrite(&tGame, sizeof(TetrisGameState), 1, file)==0) {
+                                perror("fwrite failed");
+                                exit(1);
+                        }
+                        fclose(file);
+                }
+        }
+    }
+}
 
 
 void print_title(int num_spaces) {
@@ -284,8 +329,9 @@ char inputCheck(char *expected, char *input) {
         int i = 0;
         char nc = '\0';
         char valid = 1;
-        //T.H: Go through chars in expected and compare them to input if input still has chars left.
-        //T.H: If input runs out of chars early with at least the first char matching the first char of expected, break loop
+        //TH: Go through chars in expected and compare them to input if input still has chars left.
+        //TH: If input runs out of chars early with at least the first char matching the first char
+        //    of expected, break loop
         while (expected[i]!=nc && valid) {
                 if (input[i]==nc) {
                         valid = (i==0) ? 0 : 1;
@@ -296,7 +342,7 @@ char inputCheck(char *expected, char *input) {
                 }
                 i++;
         }
-        //T.H: If loop ends when expected[i] is null char, need to make sure valid[i] is also null char
+        //TH: If loop ends when expected[i] is null char, need to make sure valid[i] is also null char
         if (expected[i]==nc) {
                 valid = (expected[i]==nc && expected[i]==input[i] && valid) ? 1 : 0;
         }

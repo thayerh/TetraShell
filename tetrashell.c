@@ -221,7 +221,7 @@ int main(int argc, char** argv){
         }
         //TH: Special handling of rank check due to recover also starting with an 'r'
         if(tokens[0][0]=='r' && inputCheck("ank", &tokens[0][1])){
-            if (tokenCount != 3) {
+            if (tokenCount > 3) {
                 fprintf(stderr, "Error: Rank needs 2 commands.\n");
             }
             //K.P: Create the working fds. Read and write end for the pipe.
@@ -243,7 +243,15 @@ int main(int argc, char** argv){
                 close(fds[1]);
                 //K.P: Redirect stdin to the read end of the pipe
                 dup2(fds[0], STDIN_FILENO);
-                char *rankArgs[] = {"rank", tokens[1], tokens[2], "uplink", NULL};
+                //TH: If less than 3 args, autofill
+                char *rankArgs[5];
+                if (tokenCount == 1) {
+                        char *rankArgs[] = {"rank", "score", "10", "uplink", NULL};
+                } else if (tokenCount == 2) {
+                        char *rankArgs[] = {"rank", tokens[1], "10", "uplink", NULL};
+                } else {
+                        char *rankArgs[] = {"rank", tokens[1], tokens[2], "uplink", NULL};
+                }
                 st = execve(rankPath, rankArgs, NULL);
                 if (st == -1)
                     perror("execve");

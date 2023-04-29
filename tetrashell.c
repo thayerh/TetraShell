@@ -81,7 +81,6 @@ int main(int argc, char** argv){
 
     printf("Enter your command below to get started: \n");
     while(true){
-
         char *tokens[MAX_LINE_LENGTH] = {0};
         int tokenCount = 0;
         printf("%s",userName);
@@ -431,7 +430,7 @@ bool vailidateSave(char* savePath){
         return 1;
     } else if (pid == 0) {
         close(fd[0]); //K.P: Close read end of the pipe
-        dup2(fd[1], STDOUT_FILENO); // Redirect stdout to write end of the pipe
+        dup2(fd[1], STDOUT_FILENO); //K.P: Redirect stdout to write end of the pipe
 
         char *checkArgs[] = {checkPath, savePath, NULL};
         int st = execve(checkPath, checkArgs, NULL);
@@ -453,17 +452,16 @@ bool vailidateSave(char* savePath){
         }
 
         bool saveIsValid; 
-        char *legit = "legitmate";
-        char *notLegit = "illegitimate";
+        char *notLegit = "illegit";
 
-        char *goodSave = strstr(checkOutput, legit);
         char *badSave = strstr(checkOutput, notLegit);
 
-        if(goodSave){
-            saveIsValid = true;
-        }
-        else if(badSave){
+
+        if(badSave){
             saveIsValid = false;
+        }
+        else{
+            saveIsValid = true;
         }
         //K.P: Close read end of the pipe and free the memory
         close(fd[0]);

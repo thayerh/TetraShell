@@ -290,6 +290,7 @@ int main(int argc, char** argv){
                 printf("Current savefile: %s\n", savePath);
                 printf("Score: %u\n", tGame.score);
                 printf("Lines: %u\n", tGame.lines);
+                printf("Is Save Legitimate: %s\n", saveIsValid ? "True" : "False");
         }
         if (inputCheck("undo", tokens[0])) {
                 //TH: If there is a previous file, use it
@@ -312,6 +313,10 @@ int main(int argc, char** argv){
 
 
 void print_title(int num_spaces) {
+    if(strcmp(getenv("TERM"), "xterm-256color") == 0){
+        printf("\033[34m");
+    }
+
     printf("\033[2J\033[H"); //K.P: Clears the screen and move the cursor to the top-left corner
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
@@ -342,6 +347,10 @@ void print_title(int num_spaces) {
     }
     printf("/_/  \\___/\\__/_/   \\___//____/_/ /_/\\___/ _/_/   \n");
     usleep(1200);
+    
+    if(strcmp(getenv("TERM"), "xterm-256color") == 0){
+        printf("\033[0m");
+    }
 }
 
 

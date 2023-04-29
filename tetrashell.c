@@ -14,43 +14,10 @@ char* checkPath = "/playpen/a5/check";
 char* modifyPath = "/playpen/a5/modify";
 
 
+void print_title(int num_spaces);
 char inputCheck(char *expected, char *input);
 char *getFirstFour(const char *str);
 void printBoard(TetrisGameState tGame, char* savePath);
-
-
-void print_title(int num_spaces) {
-    printf("\033[2J\033[H"); //K.P: Clears the screen and move the cursor to the top-left corner
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf("Welcome to...\n");
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf("  ______     __             _____ __         ____\n");
-    usleep(1200);
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf(" /_  __/__  / /__________ _/ ___// /_  ___  / / /\n");
-    usleep(1200);
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf("  / / / _ \\/ __/ ___/ __ /\\__ \\/ __  \\/ _ \\/ / / \n");
-    usleep(1200);
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf(" / / /  __/ /_/ /  / /_/ /___/ / / / /  __/ / /  \n");
-    usleep(1200);
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf("/_/  \\___/\\__/_/   \\___//____/_/ /_/\\___/ _/_/   \n");
-    usleep(1200);
-}
 
 
 int main(int argc, char** argv){
@@ -74,7 +41,7 @@ int main(int argc, char** argv){
 
     for (int col = start_col; col >= end_col; --col) {
         print_title(col);
-        usleep(10);
+        usleep(10000);
     }
 
     printf("the ultimate Tetris quicksave hacking tool!\n");
@@ -173,6 +140,18 @@ int main(int argc, char** argv){
                 strncpy(savePath, tokens[1], MAX_LINE_LENGTH);
                 savePath[MAX_LINE_LENGTH - 1] = '\0'; //K.P: Ensure null termination
                 printf("Switch current quicksave from %s to %s.\n", oldPath, savePath);
+
+                //TH: Change tGame to new safeFile
+                file = fopen(savePath, "rb");
+                if (file==NULL) {
+                        perror("fopen failed");
+                        exit(1);
+                }
+                if((fread(&tGame, sizeof(tGame), 1, file)==0)) {
+                        perror("fread failed");
+                        exit(1);
+                }
+                fclose(file);
             }
         }
         if(inputCheck("check", tokens[0])){
@@ -267,6 +246,40 @@ int main(int argc, char** argv){
  }
 
 
+void print_title(int num_spaces) {
+    printf("\033[2J\033[H"); //K.P: Clears the screen and move the cursor to the top-left corner
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
+    printf("Welcome to...\n");
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
+    printf("  ______     __             _____ __         ____\n");
+    usleep(1200);
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
+    printf(" /_  __/__  / /__________ _/ ___// /_  ___  / / /\n");
+    usleep(1200);
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
+    printf("  / / / _ \\/ __/ ___/ __ /\\__ \\/ __  \\/ _ \\/ / / \n");
+    usleep(1200);
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
+    printf(" / / /  __/ /_/ /  / /_/ /___/ / / / /  __/ / /  \n");
+    usleep(1200);
+    for (int i = 0; i < num_spaces; ++i) {
+        printf(" ");
+    }
+    printf("/_/  \\___/\\__/_/   \\___//____/_/ /_/\\___/ _/_/   \n");
+    usleep(1200);
+}
+
+
 char inputCheck(char *expected, char *input) {
         int i = 0;
         char nc = '\0';
@@ -290,6 +303,7 @@ char inputCheck(char *expected, char *input) {
         return valid;
 }
 
+
 //K.P: Gets the first four characters of the given save. if longer, it will be abbreviated.
 char *getFirstFour(const char *str){
     static char firstFour[8];
@@ -307,23 +321,19 @@ char *getFirstFour(const char *str){
     }
 }
 
-//T.H: Prints the game board passed through tGame
+
 void printBoard(TetrisGameState tGame, char* savePath) {
         int i = 0;
         int m;
-        //T.H: Print first 2 lines
         printf("Visualizing savefile %s\n", savePath);
         printf("+---- Gameboard -----+   +--- Next ----+\n");
-        //T.H: Go through board from tGame and print to the console
         for (int r = 0; r<20; r++) {
-                //T.H: Beginning and ends of the lines don't change, look into the board from tGame for middle parts
                 putchar('|');
                 for (int c = 0; c<10; c++) {
                         putchar(tGame.board[i]);
                         putchar(tGame.board[i++]);
                 }
                 putchar('|');
-                //T.H: Make the next piece part
                 if (r<7) {
                         if (r==0 || r==5) {
                                 printf("   |             |");
@@ -342,4 +352,3 @@ void printBoard(TetrisGameState tGame, char* savePath) {
         }
         printf("+--------------------+\n");
 }
-

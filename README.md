@@ -6,7 +6,8 @@ Additional Components Implemented:
 -  Switch (5)
 -  Visualize (15)
 -  Basic Save Info (5)
--  Undo (15)  
+-  Undo (15)
+-  Quick-Rank (5)
 
 
 Additional Components in Progress:

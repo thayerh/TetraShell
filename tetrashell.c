@@ -356,41 +356,28 @@ int main(int argc, char** argv){
 
 
 void print_title(int num_spaces) {
-    if(strcmp(getenv("TERM"), "xterm-256color") == 0){
+    if (strcmp(getenv("TERM"), "xterm-256color") == 0) {
         printf("\033[34m");
     }
 
     printf("\033[2J\033[H"); //K.P: Clears the screen and move the cursor to the top-left corner
+    printf("\n");
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
     }
     printf("Welcome to...\n");
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf("  ______     __             _____ __         ____\n");
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf(" /_  __/__  / /__________ _/ ___// /_  ___  / / /\n");
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf("  / / / _ \\/ __/ ___/ __ /\\__ \\/ __  \\/ _ \\/ / / \n");
 
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf(" / / /  __/ /_/ /  / /_/ /___/ / / / /  __/ / /  \n");
-    for (int i = 0; i < num_spaces; ++i) {
-        printf(" ");
-    }
-    printf("/_/  \\___/\\__/_/   \\___//____/_/ /_/\\___/ _/_/   \n");
-    
-    if(strcmp(getenv("TERM"), "xterm-256color") == 0){
+    printf("%*s   ______     __             _____ __         ____\n", num_spaces, "");
+    printf("%*s  /_  __/__  / /__________ _/ ___// /_  ___  / / /\n", num_spaces, "");
+    printf("%*s   / / / _ \\/ __/ ___/ __ /\\__ \\/ __  \\/ _ \\/ / / \n", num_spaces, "");
+    printf("%*s  / / /  __/ /_/ /  / /_/ /___/ / / / /  __/ / /  \n", num_spaces, "");
+    printf("%*s /_/  \\___/\\__/_/   \\___//____/_/ /_/\\___/ _/_/   \n\n", num_spaces, "");
+
+    if (strcmp(getenv("TERM"), "xterm-256color") == 0) {
         printf("\033[0m");
     }
 }
+
 
 
 char inputCheck(char *expected, char *input) {

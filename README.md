@@ -17,6 +17,9 @@ Additional Components Implemented:
 
 
 Additional Components in Progress:
+- Pretty Rank (15)
+- Pretty Recover (30)
+- Train (20)
 
   
 Stuff That Needs to get Done:

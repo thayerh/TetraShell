@@ -361,7 +361,6 @@ void print_title(int num_spaces) {
     }
 
     printf("\033[2J\033[H"); //K.P: Clears the screen and move the cursor to the top-left corner
-    printf("\n");
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
     }

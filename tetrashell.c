@@ -64,7 +64,9 @@ int main(int argc, char** argv){
     }
 
     printf("the ultimate Tetris quicksave hacking tool!\n");
+    printf("Type 'help' for more info after entering a quicksave path.\n");
     printf("Enter the path to the quicksave you'd like to begin hacking: ");
+    
     fgets(savePath, MAX_LINE_LENGTH, stdin);
     //K.P: Remove the new line from the end of the input.
         for (int i = 0; i < MAX_LINE_LENGTH; i++) {
@@ -160,37 +162,48 @@ int main(int argc, char** argv){
                 waitpid(pid, &status, 0);
             }
         }
+
        if(inputCheck("help", tokens[0])) {
-            if(inputCheck("check", tokens[1])) {
-                printf("This command calls the `check` program with the current "
-                    "quicksave to verify if it will pass legitimacy checks.\n");
+        if(tokens[1] != NULL){
+                if(inputCheck("check", tokens[1])) {
+                    printf("This command calls the `check` program with the current "
+                        "quicksave to verify if it will pass legitimacy checks."
+                            "can input 'c', 'ch', etc.\n");
+                }
+                if(inputCheck("rank", tokens[1])) {
+                    printf("Rank the current quicksave with a database of other saves. "
+                        "Input (Rank or 'r', 'ra', etc.) (Score or Lines) and number" 
+                            "of lines to return. Can just input" 
+                                " 'rank' and will default to ten lines and sort by score. \n");
+                }
+                if(inputCheck("modify", tokens[1])) {
+                    printf("Modifies the current save. Input" 
+                        "(Modify or 'm', 'mo', etc.) (Score or Lines) "
+                            "(Number to set value to)\n");
+                }
+                if(inputCheck("switch", tokens[1])) {
+                    printf("Switches the current save to the one you input. Input (Switch) (Save path)\n");
+                }
+                if(inputCheck("info", tokens[1])) {
+                    printf("Prints the info of the given save. Includes scores, lines, and validity.\n");
+                }
+                if(inputCheck("visualize", tokens[1])) {
+                    printf("Prints the visual description of the given save.\n");
+                }
+                if(inputCheck("undo", tokens[1])) {
+                    printf("Undoes the last modify action.\n");
+                }
             }
-            if(inputCheck("rank", tokens[1])) {
-                printf("Rank the current quicksave with a database of other saves. "
-                    "Input (Rank) (Score or Lines) and number of lines to return.\n");
-            }
-            if(inputCheck("modify", tokens[1])) {
-                printf("Modifies the current save. Input (Modify) (Score or Lines) "
-                    "(Number to set value to)\n");
-            }
-            if(inputCheck("switch", tokens[1])) {
-                printf("Switches the current save to the one you input. Input (Switch) (Save path)\n");
-            }
-            if(inputCheck("info", tokens[1])) {
-                printf("Prints the info of the given save.\n");
-            }
-            if(inputCheck("visualize", tokens[1])) {
-                printf("Prints the visual description of the given save.\n");
-            }
-            if(inputCheck("undo", tokens[1])) {
-                printf("Undoes the last modify action.\n");
+            else{
+                printf("type 'help' followed by action name for more information. " 
+                    "(check, rank, modify, switch, info, undo, visualize, train)\n");            
             }
         }
 
 
         if(inputCheck("switch", tokens[0])){
             if(tokenCount != 2){
-                fprintf(stderr, "Need new quicksave path.\n");
+                fprintf(stderr, "Please enter new quicksave path.\n");
             }
             else {
                 //K.P: copies new path into original buffer and then prints the switch.
@@ -220,7 +233,7 @@ int main(int argc, char** argv){
                 return 1;
             } else if (pid == 0){
                 if(tokenCount != 1){
-                    fprintf(stderr, "Error: too many arguments given. Only need one.\n");
+                    fprintf(stderr, "Error: check takes no extra arguments\n");
                 }
                 char *checkArgs[] = {checkPath, savePath, NULL}; 
                 st = execve(checkPath, checkArgs, NULL);
@@ -242,7 +255,8 @@ int main(int argc, char** argv){
             }
             else if(pid == 0){
                 if(tokenCount != 3){
-                    fprintf(stderr, "Error: Modify needs 2 commands.\n");
+                    fprintf(stderr, "Error: Modify needs 2 commands."
+                         "(either score or lines) (number to change value to).\n");
                 }
                 char *modifyArgs[] = {modifyPath, tokens[1], tokens[2], savePath, NULL};
                 st = execve(modifyPath, modifyArgs, NULL);
@@ -276,8 +290,9 @@ int main(int argc, char** argv){
         }
         //TH: Special handling of rank check due to recover also starting with an 'r'
         if(tokens[0][0]=='r' && inputCheck("ank", &tokens[0][1])){
-            if (tokenCount > 3) {
-                fprintf(stderr, "Error: Rank needs 2 commands.\n");
+            if (tokenCount < 1) {
+                fprintf(stderr, "Error: Rank needs 1 commands at minimum. ('rank'). Can also provide" 
+                    "either score or lines and number rankings to return. ('rank score 100') \n");
             }
             //K.P: Create the working fds. Read and write end for the pipe.
             int fds[2];

@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include "tetris.h"
 
 #define MAX_LINE_LENGTH 1024
@@ -27,6 +28,15 @@ bool vailidateSave(char* savePath);
 
 
 int main(int argc, char** argv){
+
+    struct winsize ws;
+
+    // Get the terminal window size
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1) {
+        perror("ioctl");
+        return 1;
+    }
+
     char* userName = getlogin();
     //K.P: initializes the savePath and userInput memory. Initialize the tokens array to split the userInput into chunks.
     char *savePath = malloc(MAX_LINE_LENGTH);
@@ -42,10 +52,13 @@ int main(int argc, char** argv){
 
 
     //K.P allows for the animation of the logo. Starts from the right side (column 80) and reprints the title until end_col = col.
-    int start_col = 40;
+    int start_col = ws.ws_col / 3;
     int end_col = 0;
 
     for (int col = start_col; col >= end_col; --col) {
+        if(col == end_col){
+            system("clear");
+        }
         print_title(col);
         usleep(10000);
     }
@@ -165,6 +178,12 @@ int main(int argc, char** argv){
             }
             if(inputCheck("info", tokens[1])) {
                 printf("Prints the info of the given save.\n");
+            }
+            if(inputCheck("visualize", tokens[1])) {
+                printf("Prints the visual description of the given save.\n");
+            }
+            if(inputCheck("undo", tokens[1])) {
+                printf("Undoes the last modify action.\n");
             }
         }
 
@@ -350,27 +369,23 @@ void print_title(int num_spaces) {
         printf(" ");
     }
     printf("  ______     __             _____ __         ____\n");
-    usleep(1200);
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
     }
     printf(" /_  __/__  / /__________ _/ ___// /_  ___  / / /\n");
-    usleep(1200);
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
     }
     printf("  / / / _ \\/ __/ ___/ __ /\\__ \\/ __  \\/ _ \\/ / / \n");
-    usleep(1200);
+
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
     }
     printf(" / / /  __/ /_/ /  / /_/ /___/ / / / /  __/ / /  \n");
-    usleep(1200);
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
     }
     printf("/_/  \\___/\\__/_/   \\___//____/_/ /_/\\___/ _/_/   \n");
-    usleep(1200);
     
     if(strcmp(getenv("TERM"), "xterm-256color") == 0){
         printf("\033[0m");

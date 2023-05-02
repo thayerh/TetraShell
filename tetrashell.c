@@ -25,6 +25,12 @@ char inputCheck(char *expected, char *input);
 char *getFirstFour(const char *str);
 void printBoard(TetrisGameState tGame, char* savePath);
 bool vailidateSave(char* savePath);
+void train();
+char* readInput();
+bool checkExit(const char *input);
+char* intToBinary(int integer);
+
+
 
 
 int main(int argc, char** argv){
@@ -369,6 +375,9 @@ int main(int argc, char** argv){
                 //TH: call printBoard function to print the board
                 printBoard(tGame, savePath);
         }
+        if(inputCheck("train", tokens[0])){
+            train();
+        }
         if (inputCheck("info", tokens[0])) {
                 //TH: Print current file, score, lines
                 printf("Current savefile: %s\n", savePath);
@@ -548,14 +557,164 @@ bool vailidateSave(char* savePath){
     }
 }
 
-void train(){
-    //K.P: Seed the rand function with the current time. 
-    //K.P: This allows for a more random assortment of numbers because the time is constantly changing. 
-    srand(time(NULL));
-    //K.P: Generate the random number in Hex.
-    unsigned int random_number = rand() % 0x100000000;
-
-    
-
+//K.P: Here are helper functions for train() and the train().
+char* readInput() {
+    char *input = malloc(100);
+    fgets(input, 100, stdin);
+    input[strcspn(input, "\n")] = '\0';
+    return input;
 }
+
+bool checkExit(const char *input) {
+    return strncmp(input, "exit", 4) == 0;
+}
+
+char* intToBinary(int integer) {
+    char *binary = malloc(9);
+    for (int i = 7; i >= 0; i--) {
+        binary[7 - i] = (integer & (1 << i)) ? '1' : '0';
+    }
+    binary[8] = '\0';
+    return binary;
+}
+
+
+void train() {
+    bool isFinished = false;
+    while (!isFinished) {
+        srand(time(NULL));
+        //K.P: Picks a random 8 bit integer. 
+        int integer = rand() % 256;
+        //K.P: Picks a random case to start at,
+            // Either decimal, hex, or integer.
+        int choice = rand() % 3;
+        //K.P: Had to free the arrays every case because otherwise will cause core dump.
+        switch (choice) {
+            case 0: {
+                //K.P: int to choose if int will be converted to hex or bin.
+                int hexOrBin = rand() % 2;
+                if (hexOrBin == 0) {
+                    //K.P: Convert to hex
+                    printf("Convert integer: %d into hex -> ", integer);
+                    char *hexInput = readInput();
+                    if (checkExit(hexInput)) {
+                        isFinished = true;
+                        free(hexInput);
+                        break;
+                    }
+                    int hexAsInt = strtol(hexInput, NULL, 16);
+                    if (hexAsInt == integer) {
+                        printf("Correct!\n");
+                    } else {
+                        printf("No, the correct answer is: %04X\n", integer);
+                    }
+                    free(hexInput);
+                } else if (hexOrBin == 1) {
+                    //K.P: Convert to binary.
+                    printf("Convert integer: %d into binary -> ", integer);
+                    char *binaryInput = readInput();
+                    if (checkExit(binaryInput)) {
+                        isFinished = true;
+                        free(binaryInput);
+                        break;
+                    }
+                    int binToInt = strtol(binaryInput, NULL, 2);
+                    if (binToInt == integer) {
+                        printf("Correct!\n");
+                    } else {
+                        char *correctBinary = intToBinary(integer);
+                        printf("No, the correct answer is: %s\n", correctBinary);
+                        free(correctBinary);
+                    }
+                    free(binaryInput);
+                }
+                break;
+            }
+            case 1: {
+                //K.P: int to decide if hex will be converted to binary or int.
+                int hexOrInt = rand() % 2;
+                if (hexOrInt == 0) {
+                    //K.P: Convert to binary
+                    printf("Convert hex number: %04X into binary -> ", integer);
+                    char *binaryInput = readInput();
+                    if (checkExit(binaryInput)) {
+                        isFinished = true;
+                        free(binaryInput);
+                        break;
+                    }
+                    int binToInt = strtol(binaryInput, NULL, 2);
+                    if (binToInt == integer) {
+                        printf("Correct!\n");
+                    } else {
+                        char *correctBinary = intToBinary(integer);
+                        printf("No, the correct answer is: %s\n", correctBinary);
+                        free(correctBinary);
+                    }
+                    free(binaryInput);
+                } else if (hexOrInt == 1) {
+                    //K.P: Convert to int.
+                    printf("Convert hex number: %04X to integer -> ", integer);
+                    char *intInput = readInput();
+                    if (checkExit(intInput)) {
+                        isFinished = true;
+                        break;
+                    }
+                    int integerInput = atoi(intInput);
+                    free(intInput);
+                    if (integerInput == integer) {
+                        printf("Correct!\n");
+                    } else {
+                        printf("The correct answer is: %d\n", integer);
+                    }
+                }
+                break;
+            }
+            case 2: {
+                //K.P: int to decide if binary will be converted to hex or int.
+                int hexOrInt = rand() % 2;
+                if (hexOrInt == 0) {
+                    //K.P: Convert to int
+                    char *binary = intToBinary(integer);
+                    printf("Given binary: %s convert to integer -> ", binary);
+                    char *intInput = readInput();
+                    if (checkExit(intInput)) {
+                        isFinished = true;
+                        free(intInput);
+                        break;
+                    }
+                    int integerInput = atoi(intInput);
+                    free(intInput);
+                    if (integerInput == integer) {
+                        printf("Correct!\n");
+                    } else {
+                        printf("No, the correct answer is: %d\n", integer);
+                    }
+                } else if (hexOrInt == 1) {
+                    //K.P: Convert to hex
+                    char *binary = intToBinary(integer);
+                    printf("Given binary: %s convert to hex -> ", binary);
+                    char *hexInput = readInput();
+                    free(binary);
+                    if (checkExit(hexInput)) {
+                        isFinished = true;
+                        free(hexInput);
+                        break;
+                    }
+                    int hexAsInt = strtol(hexInput, NULL, 16);
+                    if (hexAsInt == integer) {
+                        printf("Correct!\n");
+                    } else {
+                        printf("No, the correct answer is: %04X\n", integer);
+                    }
+                    free(hexInput);
+                }
+                break;
+            }
+        }
+    }
+    if (isFinished) {
+        printf("Thanks for playing.\n");
+    }
+}
+
 

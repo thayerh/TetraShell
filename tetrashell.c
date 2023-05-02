@@ -199,6 +199,10 @@ int main(int argc, char** argv){
                 if(inputCheck("undo", tokens[1])) {
                     printf("Undoes the last modify action.\n");
                 }
+                if(inputCheck("train", tokens[1])) {
+                    printf("Fun game to test hex to binary to" 
+                        " integer conversions.\n");
+                }
             }
             else{
                 printf("type 'help' followed by action name for more information. " 
@@ -581,8 +585,9 @@ char* intToBinary(int integer) {
 
 void train() {
     bool isFinished = false;
+    srand(time(NULL));
+    printf("Welcome to train. type 'exit' to quit\n");
     while (!isFinished) {
-        srand(time(NULL));
         //K.P: Picks a random 8 bit integer. 
         int integer = rand() % 256;
         //K.P: Picks a random case to start at,

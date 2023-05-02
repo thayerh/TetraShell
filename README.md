@@ -10,6 +10,7 @@ Additional Components Implemented:
     - Also prints if save file is legitimate or not. (add'l. points?)
 -  Undo (15)
 -  Quick-Rank (5)
+-  Train (20)
 -  Imporoved Prompt(7)
    - Also added if the given save file is illegal it will print in red, otherwise green. (add'l. points?)
    
@@ -20,7 +21,6 @@ Additional Components Implemented:
 Additional Components in Progress:
 - Pretty Rank (15)
 - Pretty Recover (30)
-- Train (20)
 
   
 Stuff That Needs to get Done:

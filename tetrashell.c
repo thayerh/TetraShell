@@ -289,15 +289,17 @@ int main(int argc, char** argv){
             }
         }
         //TH: Special handling of rank check due to recover also starting with an 'r'
+        //TH: Special handling of rank check due to recover also starting with an 'r'
         if(tokens[0][0]=='r' && inputCheck("ank", &tokens[0][1])){
             if (tokenCount < 1) {
-                fprintf(stderr, "Error: Rank needs 1 commands at minimum. ('rank'). Can also provide" 
+                fprintf(stderr, "Error: Rank needs 1 commands at minimum. ('rank'). Can also provide"
                     "either score or lines and number rankings to return. ('rank score 100') \n");
             }
             //K.P: Create the working fds. Read and write end for the pipe.
-            int fds[2];
+            int fdsInit[2];
+            int fdsFin[2];
             //K.P: Initialize the pipe
-            if (pipe(fds) == -1) {
+            if ((pipe(fdsInit) == -1) || (pipe(fdsFin) == -1)) {
                 perror("pipe");
                 exit(1);
             }
@@ -310,9 +312,11 @@ int main(int argc, char** argv){
             } else if (rank_pid == 0) {
                 //K.P: Child process
                 //K.P: Close the write end of the pipe
-                close(fds[1]);
+                close(fdsInit[1]);
+                close(fdsFin[0]);
                 //K.P: Redirect stdin to the read end of the pipe
-                dup2(fds[0], STDIN_FILENO);
+                dup2(fdsInit[0], STDIN_FILENO);
+                dup2(fdsFin[1], STDOUT_FILENO);
                 //TH: If less than 3 args, autofill
                 char *rankArgs[5];
                 if (tokenCount == 1) {
@@ -323,17 +327,39 @@ int main(int argc, char** argv){
                         char *rankArgs[] = {"rank", tokens[1], tokens[2], "uplink", NULL};
                 }
                 st = execve(rankPath, rankArgs, NULL);
-                if (st == -1)
+                if (st == -1) {
                     perror("execve");
                     exit(1);
+                }
             } else {
                 //K.P: Parent process
                 //K.P: Close the read end of the pipe
-                close(fds[0]);
+                close(fdsInit[0]);
+                close(fdsFin[1]);
                 //K.P: Write savePath to the write end of the pipe
-                write(fds[1], savePath, strlen(savePath));
+                write(fdsInit[1], savePath, strlen(savePath));
                 //K.P: Close the write end of the pipe
-                close(fds[1]);
+                close(fdsInit[1]);
+                char rankLine[MAX_LINE_LENGTH];
+                FILE* rankFile = fdopen(fdsFin[0], "r");
+                int numRank = (tokenCount > 2) ? atoi(tokens[2]) : 5;
+                int numPrinted = 0;
+
+                printf("-- ------------------------------------------------------- \n");
+                printf("#  File Path                                               \n");
+                printf("-- ------------------------------------------------------- \n");
+                while (fgets(rankLine, MAX_LINE_LENGTH, rankFile)) {
+                        rankLine[strcspn(rankLine, "\n")] = '\0';
+                        if (tokenCount > 2) {
+                                printf("%d  %s\n", ++numPrinted, rankLine);
+                                if (numPrinted == numRank) {
+                                         break;
+                                }
+                        }
+                }
+
+
+                close(fdsFin[0]);
                 //K.P: Wait for the rank process to finish
                 int status;
                 waitpid(rank_pid, &status, 0);

@@ -16,13 +16,15 @@ Tetrashell - an all-in-one command line interface tetris quicksave hacking tool.
 
 The CLI will look like this "(currentUser)@TShell[QuicksaveName][score/lines]>"
 
-A user will be prompted with entering the path to their quicksave at the start of the program. After the input there are multiple commands a user can run. 
+A user will be prompted with entering the path to their quicksave at the start of the program. After the input there are multiple commands a user can run.
+
+All commands can be entered with the shortest amount of characters it takes to uniquely identitfy it.
 
 **-check** 
 : This command calls the **check** program with the current quicksave to verify if it will pass legitimacy checks.
 
 **-rank** 
-: Rank the current quicksave with a database of other saves." <"Rank or 'r', 'ra', etc."> <'Score' or 'Lines'> and <"number of lines to return."> Can just input **rank** and will default to 5 lines on either side of current file and sort by score.
+: Rank the current quicksave with a database of other saves." <"Rank or 'ra', etc."> <'Score' or 'Lines'> and <"number of lines to return."> Can just input **rank** and will default to 5 lines on either side of current file and sort by score.
 
 **-modify**
 Modifies the current save. Input <**Modify** or 'm', 'mo', etc.> <"Score or Lines"> <"Number to set value to">.

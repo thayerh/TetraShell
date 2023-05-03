@@ -90,7 +90,7 @@ Kishan Patel and Thayer Hicks
 
 # NOTES
 Features implemented: modify, rank, recover, check, switch, undo, visualize, improved prompt, intro animation
-, quick-rank, help, info, and train, short-commands, pretty-rank, and pretty-recover.
+, quick-rank, help, info, train, short-commands, pretty-rank, and pretty-recover.
 
 Short commands allow for users to input  'ra', 'ran', etc. all for rank. This also applies for other commands where they can be shortened to the lowest amount. 
 Ex. 'ra' for rank becuase 'r' would qualify for recover and rank. This was implemented through the inputCheck() function.

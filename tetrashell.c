@@ -78,36 +78,35 @@ int main(int argc, char** argv){
 
     fgets(savePath, MAX_LINE_LENGTH, stdin);
     //K.P: Remove the new line from the end of the input.
-        for (int i = 0; i < MAX_LINE_LENGTH; i++) {
-            if (savePath[i] == '\n') {
-                savePath[i] = '\0';
-                break;
-            }
+    for (int i = 0; i < MAX_LINE_LENGTH; i++) {
+        if (savePath[i] == '\n') {
+            savePath[i] = '\0';
+            break;
         }
+    }
 
-        //TH: Open quicksave for use throughout program
-        FILE *file = fopen(savePath, "rb");
-        if (file == NULL) {
-                perror("fopen failed");
-                exit(1);
-        }
+    //TH: Open quicksave for use throughout program
+    FILE *file = fopen(savePath, "rb");
+    if (file == NULL) {
+            perror("fopen failed");
+            exit(1);
+    }
+    //TH: Initialize game state struct for use throught program
+    TetrisGameState tGame;
+    if ((fread(&tGame, sizeof(tGame), 1, file)==0)) {
+            perror("fread failed");
+            exit(1);
+    }
+    fclose(file);
 
-        TetrisGameState tGame;
-        if ((fread(&tGame, sizeof(tGame), 1, file)==0)) {
-                perror("fread failed");
-                exit(1);
-        }
-
-        fclose(file);
-
-    //TH: init array of previous modifies
+    //TH: init array of previous modifies for use with 'undo' functionality
     TetrisGameState *pastGames;
     int numPast = 0;
     int numAlloc = 0;
 
 
 
-
+    //TH: begin accepting input
     printf("Enter your command below to get started: \n");
     while(true){
         char *tokens[MAX_LINE_LENGTH] = {0};
@@ -146,15 +145,21 @@ int main(int argc, char** argv){
             tokens[tokenCount++] = token;
             token = strtok(NULL, " ");
         }
-
+        //TH: Append tokens[] with a NULL pointer
         tokens[tokenCount] = NULL;
+
+        //TH: EXIT ----------------------------------------------
+        //TH: First check if user wants to exit the program
         if(inputCheck("exit", tokens[0])){
             exit(1);
         }
 
+        //TH: RECOVER -------------------------------------------
         int st;
         //TH: For easiest inputCheck impl, if first letter of input is r, need to differentiate between rank and recover
-        if(tokens[0][0]=='r' && inputCheck("ecover", &tokens[0][1])){
+        if (tokens[0][0]=='r' && inputCheck("ecover", &tokens[0][1])) {
+                //TH: set up int arrays for file numbers for pipes
+                //TH: fdsRecU will go unused as it merely blocks stderr from child
                 int fdsRec[2];
                 int fdsRecU[2];
                 if (pipe(fdsRec) == -1 || pipe(fdsRecU) == -1) {
@@ -162,57 +167,67 @@ int main(int argc, char** argv){
                         exit(1);
                 }
 
+                //TH: Create a child process to call recover
                 pid_t pid = fork();
-
                 if (pid < 0) {
                         perror("fork");
                         return 1;
                 } else if (pid == 0){
-                //TH: Close read end of pipe
+                        //TH: Close read end of pipes
                         close(fdsRec[0]);
                         close(fdsRecU[0]);
-                        //TH: Redirect stdout of recover to pipe
-                        dup2(fdsRec[1], STDOUT_FILENO);
-                        dup2(fdsRecU[1], STDERR_FILENO);
-
+                        //TH: Redirect stdout of recover to pipe and stderr to unused pipe
+                        if (dup2(fdsRec[1], STDOUT_FILENO) == -1
+                                || dup2(fdsRecU[1], STDERR_FILENO) == -1) {
+                            perror("dup2 failed");
+                            exit(1);
+                        }
+                        //TH: Execute recover
                         st = execve(recoverPath, tokens, NULL);
                         if(st == -1){
                             perror("execve");
                             exit(1); //K.P: Kill the child process
                         }
+                        //TH: close write end of the pipes
                         close(fdsRec[1]);
                         close(fdsRecU[1]);
                 } else {
+                        //TH: Wait for child process to finish
                         int status;
                         waitpid(pid, &status, 0);
-
+                        //TH: Close write end of both pipes and read end of child stderr pipe
                         close(fdsRec[1]);
+                        close(fdsRecU[1]);
                         close(fdsRecU[0]);
-                        close(fdsRecU[0]);
-
+                        //TH: Open stdout from child process via pipe
                         FILE* recoverFile = fdopen(fdsRec[0], "r");
                         if (recoverFile == NULL) {
                                 perror("fdopen");
                                 exit(1);
                         }
-
+                        //TH: init heap array of names to be stored for switching
                         char** recNames = malloc(sizeof(char*));
+                        if (recNames == NULL) {
+                            perror("malloc failed");
+                            exit(1);
+                        }
                         int arrSz = 1;
                         char* cur;
-
+                        //TH: Init variables for number of recovered files, file name, file pointers, and game state
                         int recNum = 0;
                         char recLine[MAX_LINE_LENGTH];
                         FILE* rf;
                         TetrisGameState game;
-
+                        //T: Print header
                         printf("Recovered quicksaves:\n");
                         printf("-- ------------------------------ ------- -------\n");
                         printf("#  File Path                      Score   Lines  \n");
                         printf("-- ------------------------------ ------- -------\n");
-
+                        //TH: Get and process lines from output of recover
                         while (fgets(recLine, MAX_LINE_LENGTH, recoverFile)) {
+                                //TH: replace newline at the end of line with a null char
                                 recLine[strcspn(recLine, "\n")] = '\0';
-
+                                //TH: Open file to read into game struct
                                 rf = fopen(recLine, "r");
                                 if (rf==NULL) {
                                         perror("fopen");
@@ -223,42 +238,53 @@ int main(int argc, char** argv){
                                         exit(1);
                                 }
                                 fclose(rf);
-
+                                //TH: Shorten lines that are too long and add ... to the end
                                 if (strlen(recLine) >= 28) {
-                                        recLine[47] = '\0';
+                                        recLine[27] = '\0';
                                         strcat(recLine, "...");
                                 }
-
+                                //TH: If heap array isn't big enough to store more lines, double size
                                 if (recNum >= arrSz) {
                                         recNames = realloc(recNames, 2 * arrSz * sizeof(char*));
                                         arrSz = 2 * arrSz;
                                 }
-
+                                //TH: Copy current line into array of previous lines
                                 cur = malloc(MAX_LINE_LENGTH);
+                                if (cur == NULL) {
+                                    perror("malloc failed");
+                                    exit(1);
+                                }
                                 strcpy(cur, recLine);
                                 recNames[recNum] = cur;
-
+                                //TH: Print the filename with score and lines
                                 printRec(++recNum, recLine, game.score, game.lines);
-
                         }
+                        //TH: Close read end of stdout pipe
                         close(fdsRec[0]);
-
+                        //TH: Prompt for switching saves
+                        //TH: Goto prompt in case of faulty answer
+                        yesno:
                         printf("Would you like to switch to one of these (y/n): ");
                         char response[MAX_LINE_LENGTH];
                         fgets(response, MAX_LINE_LENGTH, stdin);
                         if (strcmp(response, "n\n")==0) {
                                 continue;
                         } else if (strcmp(response, "y\n")==0) {
+                                //TH: Ask user which number quicksave they want to switch to
+                                //TH: goto prompt for faulty number
+                                number:
                                 printf("Which quicksave (enter a # 1-%d): ", recNum);
                                 fgets(response, MAX_LINE_LENGTH, stdin);
                                 response[strcspn(response, "\n")] = '\0';
                                 int filen = atoi(response);
                                 if (filen < 1 || filen > recNum) {
                                         printf("Invalid quicksave number");
+                                        goto number;
                                 }
                                 printf("Done! ");
+                                //TH: Switch to new file
                                 savePath = switchFile(savePath, recNames[filen-1]);
-
+                                //TH: Update tGame struct to hold current quicksave
                                 file = fopen(savePath, "rb");
                                 if (file==NULL) {
                                         perror("fopen failed");
@@ -269,10 +295,17 @@ int main(int argc, char** argv){
                                         exit(1);
                                 }
                                 fclose(file);
+                        } else {
+                                //TH: In case of faulty answer with yes or no
+                                printf("Must choose either yes (y) or no (n).\n");
+                                goto yesno;
                         }
+                        free(recNames);
+                        recNames = NULL;
                 }
         }
 
+        //TH: HELP -------------------------------------------
         if(inputCheck("help", tokens[0])) {
             if(tokens[1] != NULL){
                 if(inputCheck("check", tokens[1])) {
@@ -280,11 +313,17 @@ int main(int argc, char** argv){
                         "quicksave to verify if it will pass legitimacy checks."
                             "can input 'c', 'ch', etc.\n");
                 }
-                if(inputCheck("rank", tokens[1])) {
+                if(tokens[0][0]=='r' && inputCheck("ank", &tokens[0][1])) {
                     printf("Rank the current quicksave with a database of other saves. "
-                        "Input (Rank or 'r', 'ra', etc.) (Score or Lines) and number"
+                        "Input (Rank or 'ra', 'ran', etc.) (Score or Lines) and number"
                             "of lines to return. Can just input"
-                                " 'rank' and will default to ten lines and sort by score. \n");
+                                " 'rank' and will default to the five lines around your save"
+                                    "and sort by score. The current save will be highlighted"
+                                        "bold text. \n");
+                }
+                if(tokens[0][0]=='r' && inputCheck("ecover", &tokens[0][1])) {
+                    printf("Recovers all quicksaves in the specified .txt file. "
+                                "Input (recover or 're', 'rec', etc.) (File inclding saves)\n");
                 }
                 if(inputCheck("modify", tokens[1])) {
                     printf("Modifies the current save. Input"
@@ -292,13 +331,15 @@ int main(int argc, char** argv){
                             "(Number to set value to)\n");
                 }
                 if(inputCheck("switch", tokens[1])) {
-                    printf("Switches the current save to the one you input. Input (Switch) (Save path)\n");
+                    printf("Switches the current save to the one you input. Input (Switch) (Save path)."
+                                "Also updates the score, lines, and validity shown in the prompt.\n");
                 }
                 if(inputCheck("info", tokens[1])) {
                     printf("Prints the info of the given save. Includes scores, lines, and validity.\n");
                 }
                 if(inputCheck("visualize", tokens[1])) {
-                    printf("Prints the visual description of the given save.\n");
+                    printf("Prints the visual description of the given save, including the game board"
+                                "and next piece.\n");
                 }
                 if(inputCheck("undo", tokens[1])) {
                     printf("Undoes the last modify action.\n");
@@ -314,7 +355,7 @@ int main(int argc, char** argv){
             }
         }
 
-
+        //TH: SWITCH ------------------------------------------------
         if(inputCheck("switch", tokens[0])){
             if(tokenCount != 2){
                 fprintf(stderr, "Please enter new quicksave path.\n");
@@ -336,6 +377,8 @@ int main(int argc, char** argv){
                 fclose(file);
             }
         }
+        
+        //TH: CHECK ---------------------------------------------------
         if(inputCheck("check", tokens[0])){
             pid_t pid = fork();
             if (pid < 0) {
@@ -357,6 +400,7 @@ int main(int argc, char** argv){
             }
         }
 
+        //TH: MODIFY ---------------------------------------
         if(inputCheck("modify", tokens[0])){
             pid_t pid = fork();
             if (pid < 0) {
@@ -398,6 +442,8 @@ int main(int argc, char** argv){
                 fclose(file);
             }
         }
+        
+        //TH: RANK -----------------------------------------------------
         //TH: Special handling of rank check due to recover also starting with an 'r'
         //TH: Special handling of rank check due to recover also starting with an 'r'
         if(tokens[0][0]=='r' && inputCheck("ank", &tokens[0][1])){
@@ -405,10 +451,10 @@ int main(int argc, char** argv){
                 fprintf(stderr, "Error: Rank needs 1 commands at minimum. ('rank'). Can also provide"
                     "either score or lines and number rankings to return. ('rank score 100') \n");
             }
-            //K.P: Create the working fds. Read and write end for the pipe.
+            //K.P: Create the working fds. Read and write end for the pipes.
             int fdsInit[2];
             int fdsFin[2];
-            //K.P: Initialize the pipe
+            //K.P: Initialize the pipes
             if ((pipe(fdsInit) == -1) || (pipe(fdsFin) == -1)) {
                 perror("pipe");
                 exit(1);
@@ -421,13 +467,17 @@ int main(int argc, char** argv){
                 exit(1);
             } else if (rank_pid == 0) {
                 //K.P: Child process
-                //K.P: Close the write end of the pipe
+                //TH: Close the write end of the reading pipe and read end of writing pipe
                 close(fdsInit[1]);
                 close(fdsFin[0]);
                 //K.P: Redirect stdin to the read end of the pipe
-                dup2(fdsInit[0], STDIN_FILENO);
-                dup2(fdsFin[1], STDOUT_FILENO);
-                //TH: If less than 3 args, autofill
+                //TH: Redirect rank's stdout to write end of pipe
+                if (dup2(fdsInit[0], STDIN_FILENO)==-1
+                        || dup2(fdsFin[1], STDOUT_FILENO)==-1) {
+                    perror("dup2 failed");
+                    exit(1);
+                }
+                //TH: If less than 3 args, autofill, using 100 lines as a baseline
                 char *rankArgs[5];
                 if (tokenCount == 1) {
                         char *rankArgs[] = {"rank", "score", "100", "uplink", NULL};
@@ -443,34 +493,41 @@ int main(int argc, char** argv){
                 }
             } else {
                 //K.P: Parent process
-                //K.P: Close the read end of the pipe
+                //K.P: Close the read end of the write pipe
+                //TH: Close write end of reading pipe
                 close(fdsInit[0]);
                 close(fdsFin[1]);
-                //K.P: Write savePath to the write end of the pipe
+                //K.P: Write savePath to the write end of the write pipe
                 write(fdsInit[1], savePath, strlen(savePath));
-                //K.P: Close the write end of the pipe
+                //K.P: Close the write end of the write pipe
                 close(fdsInit[1]);
 
                 //K.P: Wait for the rank process to finish
                 int status;
                 waitpid(rank_pid, &status, 0);
 
+                //TH: Init line for reading in from rank child process
                 char rankLine[MAX_LINE_LENGTH];
-                int fd = fdsFin[0];
+                //TH: Open stdout from rank
                 FILE* rankFile = fdopen(fdsFin[0], "r");
                 if (rankFile == NULL) {
                         perror("RankFile Open");
                         exit(1);
                 }
+                //TH: Number to rank is either specified by user or 5 on each side of current
                 int numRank = (tokenCount > 2) ? atoi(tokens[2]) : 5;
                 char targetFile[MAX_LINE_LENGTH];
+                //TH: For comparison between rank file line and current file
                 sprintf(targetFile, "%s/%s", userName, savePath);
                 char isTarget = 0;
 
+                //TH: Print header
+                printf("Rank:\n");
                 printf("--- -------------------------------------------------- \n");
                 printf("#   File Path                                          \n");
                 printf("--- -------------------------------------------------- \n");
                 if (tokenCount > 2) {
+                        //TH: If number of lines is specified, print the top n lines
                         int numPrinted = 0;
                         while (fgets(rankLine, MAX_LINE_LENGTH, rankFile)) {
                                 //TH: Max printed file name length is 50 chars
@@ -495,9 +552,16 @@ int main(int argc, char** argv){
                                 }
                         }
                 } else {
+                        //TH: If number not specified, parse through lines until one matches current file
+                        //TH: When current file is found, go through the previous 5 (on the heap) and print those
+                        //TH: After printing previous 5, get next 5 lines and then break out of while loop
                         int numPassed = 0;
 
                         char** passed = malloc(sizeof(char*));
+                        if (passed==NULL) {
+                            perror("malloc");
+                            exit(1);
+                        }
                         int arrSize = 1;
                         char* cur;
                         int numLeft = numRank + 1;
@@ -514,6 +578,10 @@ int main(int argc, char** argv){
                                 }
 
                                 cur = malloc(MAX_LINE_LENGTH);
+                                if (cur==NULL) {
+                                    perror("malloc");
+                                    exit(1);
+                                }
                                 strcpy(cur, rankLine);
 
                                 passed[numPassed] = cur;
@@ -535,18 +603,25 @@ int main(int argc, char** argv){
                                         break;
                                 }
                         }
+                        free(passed);
                 }
 
                 close(fdsFin[0]);
             }
         }
+        
+        //TH: VISUALIZE ----------------------------------------------------
         if (inputCheck("visualize", tokens[0])) {
                 //TH: call printBoard function to print the board
                 printBoard(tGame, savePath);
         }
+        
+        //TH: TRAIN --------------------------------------------------------
         if(inputCheck("train", tokens[0])){
             train();
         }
+        
+        //TH: INFO ----------------------------------------------------------
         if (inputCheck("info", tokens[0])) {
                 //TH: Print current file, score, lines
                 printf("Current savefile: %s\n", savePath);
@@ -554,6 +629,8 @@ int main(int argc, char** argv){
                 printf("Lines: %u\n", tGame.lines);
                 printf("Is Save Legitimate: %s\n", saveIsValid ? "True" : "False");
         }
+        
+        //TH: UNDO ----------------------------------------------------------
         if (inputCheck("undo", tokens[0])) {
                 //TH: If there is a previous file, use it
                 if (numPast>0) {
@@ -573,7 +650,6 @@ int main(int argc, char** argv){
     }
     free(savePath);
     free(userInput);
-
 }
 
 
@@ -761,6 +837,7 @@ char* intToBinary(int integer) {
 }
 
 void printRec(int recNum, char* fileName, unsigned score, unsigned lines) {
+        //TH: Change number of spaces based on number lengths and filename lengths to ensure even spacing
         char recStr[3];
         sprintf(recStr, "%d", recNum);
         printf("%s", recStr);
@@ -784,6 +861,8 @@ void printRec(int recNum, char* fileName, unsigned score, unsigned lines) {
 }
 
 void printRank(int rankNum, char* fileName, char isBold) {
+    //TH: Adjust spaces depending on rank number length
+    //TH: Bold indicates current save
     if (rankNum < 10) {
         if (isBold) {
             printf("\033[1m%d   >> %s <<\033[0m\n", rankNum, fileName);
@@ -938,5 +1017,4 @@ void train() {
         printf("Thanks for playing.\n");
     }
 }
-
 

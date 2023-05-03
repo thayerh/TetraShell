@@ -657,8 +657,8 @@ void print_title(int num_spaces) {
     if (strcmp(getenv("TERM"), "xterm-256color") == 0) {
         printf("\033[34m");
     }
-
-    printf("\033[2J\033[H"); //K.P: Clears the screen and move the cursor to the top-left corner
+    //K.P: Clear the screen and moves the cursor back to the corner.
+    printf("\033[2J\033[H"); 
     for (int i = 0; i < num_spaces; ++i) {
         printf(" ");
     }
@@ -1017,4 +1017,3 @@ void train() {
         printf("Thanks for playing.\n");
     }
 }
-

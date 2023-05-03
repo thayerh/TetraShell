@@ -25,6 +25,7 @@ char inputCheck(char *expected, char *input);
 char *getFirstFour(const char *str);
 void printBoard(TetrisGameState tGame, char* savePath);
 bool vailidateSave(char* savePath);
+void printRank(int rankNum, char* fileName, char isBold);
 void train();
 char* readInput();
 bool checkExit(const char *input);
@@ -72,7 +73,7 @@ int main(int argc, char** argv){
     printf("the ultimate Tetris quicksave hacking tool!\n");
     printf("Type 'help' for more info after entering a quicksave path.\n");
     printf("Enter the path to the quicksave you'd like to begin hacking: ");
-    
+
     fgets(savePath, MAX_LINE_LENGTH, stdin);
     //K.P: Remove the new line from the end of the input.
         for (int i = 0; i < MAX_LINE_LENGTH; i++) {
@@ -178,12 +179,12 @@ int main(int argc, char** argv){
                 }
                 if(inputCheck("rank", tokens[1])) {
                     printf("Rank the current quicksave with a database of other saves. "
-                        "Input (Rank or 'r', 'ra', etc.) (Score or Lines) and number" 
-                            "of lines to return. Can just input" 
+                        "Input (Rank or 'r', 'ra', etc.) (Score or Lines) and number"
+                            "of lines to return. Can just input"
                                 " 'rank' and will default to ten lines and sort by score. \n");
                 }
                 if(inputCheck("modify", tokens[1])) {
-                    printf("Modifies the current save. Input" 
+                    printf("Modifies the current save. Input"
                         "(Modify or 'm', 'mo', etc.) (Score or Lines) "
                             "(Number to set value to)\n");
                 }
@@ -200,13 +201,13 @@ int main(int argc, char** argv){
                     printf("Undoes the last modify action.\n");
                 }
                 if(inputCheck("train", tokens[1])) {
-                    printf("Fun game to test hex to binary to" 
+                    printf("Fun game to test hex to binary to"
                         " integer conversions.\n");
                 }
             }
             else{
-                printf("type 'help' followed by action name for more information. " 
-                    "(check, rank, modify, switch, info, undo, visualize, train)\n");            
+                printf("type 'help' followed by action name for more information. "
+                    "(check, rank, modify, switch, info, undo, visualize, train)\n");
             }
         }
 
@@ -245,7 +246,7 @@ int main(int argc, char** argv){
                 if(tokenCount != 1){
                     fprintf(stderr, "Error: check takes no extra arguments\n");
                 }
-                char *checkArgs[] = {checkPath, savePath, NULL}; 
+                char *checkArgs[] = {checkPath, savePath, NULL};
                 st = execve(checkPath, checkArgs, NULL);
                 if (st == -1){
                     perror("execve");
@@ -330,9 +331,9 @@ int main(int argc, char** argv){
                 //TH: If less than 3 args, autofill
                 char *rankArgs[5];
                 if (tokenCount == 1) {
-                        char *rankArgs[] = {"rank", "score", "10", "uplink", NULL};
+                        char *rankArgs[] = {"rank", "score", "100", "uplink", NULL};
                 } else if (tokenCount == 2) {
-                        char *rankArgs[] = {"rank", tokens[1], "10", "uplink", NULL};
+                        char *rankArgs[] = {"rank", tokens[1], "100", "uplink", NULL};
                 } else {
                         char *rankArgs[] = {"rank", tokens[1], tokens[2], "uplink", NULL};
                 }
@@ -351,23 +352,86 @@ int main(int argc, char** argv){
                 //K.P: Close the write end of the pipe
                 close(fdsInit[1]);
                 char rankLine[MAX_LINE_LENGTH];
+                int fd = fdsFin[0];
                 FILE* rankFile = fdopen(fdsFin[0], "r");
+                if (rankFile == NULL) {
+                        perror("RankFile Open");
+                        exit(1);
+                }
                 int numRank = (tokenCount > 2) ? atoi(tokens[2]) : 5;
-                int numPrinted = 0;
+                char targetFile[MAX_LINE_LENGTH];
+                sprintf(targetFile, "%s/%s", userName, savePath);
+                char isTarget = 0;
 
-                printf("-- ------------------------------------------------------- \n");
-                printf("#  File Path                                               \n");
-                printf("-- ------------------------------------------------------- \n");
-                while (fgets(rankLine, MAX_LINE_LENGTH, rankFile)) {
-                        rankLine[strcspn(rankLine, "\n")] = '\0';
-                        if (tokenCount > 2) {
-                                printf("%d  %s\n", ++numPrinted, rankLine);
+                printf("--- -------------------------------------------------- \n");
+                printf("#   File Path                                          \n");
+                printf("--- -------------------------------------------------- \n");
+                if (tokenCount > 2) {
+                        int numPrinted = 0;
+                        while (fgets(rankLine, MAX_LINE_LENGTH, rankFile)) {
+                                //TH: Max printed file name length is 50 chars
+                                //TH: Append null char to end of rankLine instead of new line
+                                rankLine[strcspn(rankLine, "\n")] = '\0';
+                                if (strcmp(targetFile, rankLine)==0) {
+                                        isTarget = 1;
+                                }
+
+                                if (strlen(rankLine) >= 48) {
+                                        rankLine[47] = '\0';
+                                        strcat(rankLine, "...");
+                                }
+
+                                numPrinted++;
+
+                                printRank(numPrinted, rankLine, isTarget);
+                                isTarget = 0;
+
                                 if (numPrinted == numRank) {
                                          break;
                                 }
                         }
-                }
+                } else {
+                        int numPassed = 0;
 
+                        char** passed = malloc(sizeof(char*));
+                        int arrSize = 1;
+                        char* cur;
+                        int numLeft = numRank + 1;
+
+                        while (fgets(rankLine, MAX_LINE_LENGTH, rankFile)) {
+                                rankLine[strcspn(rankLine, "\n")] = '\0';
+                                if (numLeft!=numRank+1) {
+                                        printRank(numPassed, rankLine, 0);
+                                        numLeft--;
+                                }
+
+                                if (numPassed >= arrSize) {
+                                        passed = realloc(passed, 2 * numPassed * sizeof(char*));
+                                }
+
+                                cur = malloc(MAX_LINE_LENGTH);
+                                strcpy(cur, rankLine);
+
+                                passed[numPassed] = cur;
+
+                                numPassed++;
+
+                                if (strcmp(targetFile, rankLine)==0) {
+                                        numLeft--;
+                                        for (int i = numPassed - numRank; i <= numPassed; i++) {
+                                                if (i < 1) {
+                                                        continue;
+                                                }
+
+                                                printRank(i, passed[i-1], i == numPassed);
+                                        }
+                                }
+
+                                if (!numLeft) {
+                                        break;
+                                }
+                        }
+                }
 
                 close(fdsFin[0]);
                 //K.P: Wait for the rank process to finish
@@ -511,7 +575,7 @@ void printBoard(TetrisGameState tGame, char* savePath) {
 }
 
 bool vailidateSave(char* savePath){
-    //K.P: Validates the given save. 
+    //K.P: Validates the given save.
     int fd[2];
     if (pipe(fd) == -1) {
         perror("pipe");
@@ -545,7 +609,7 @@ bool vailidateSave(char* savePath){
             checkOutput[bytesRead] = '\0';
         }
 
-        bool saveIsValid; 
+        bool saveIsValid;
         char *notLegit = "illegit";
 
         char *badSave = strstr(checkOutput, notLegit);
@@ -585,13 +649,29 @@ char* intToBinary(int integer) {
     return binary;
 }
 
+void printRank(int rankNum, char* fileName, char isBold) {
+    if (rankNum < 10) {
+        if (isBold) {
+            printf("\033[1m%d   >> %s <<\033[0m\n", rankNum, fileName);
+        } else {
+            printf("%d   %s\n", rankNum, fileName);
+        }
+    } else {
+        if (isBold) {
+            printf("\033[1m%d  >> %s <<\033[0m\n", rankNum, fileName);
+        } else {
+            printf("%d  %s\n", rankNum, fileName);
+        }
+    }
+}
+
 
 void train() {
     bool isFinished = false;
     srand(time(NULL));
     printf("Welcome to train. type 'exit' to quit\n");
     while (!isFinished) {
-        //K.P: Picks a random 8 bit integer. 
+        //K.P: Picks a random 8 bit integer.
         int integer = rand() % 256;
         //K.P: Picks a random case to start at,
             // Either decimal, hex, or integer.
@@ -724,5 +804,3 @@ void train() {
         printf("Thanks for playing.\n");
     }
 }
-
-

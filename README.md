@@ -12,7 +12,7 @@ Tetrashell - an all-in-one command line interface tetris quicksave hacking tool.
 **Tetrashell** [OPTION]...[ADD'l ARUGMENTS IF NEEDED]...
 
 # DESCRIPTION
-**Tetrashell** is a multi-faceted tetris qquicksave modifier. Some features include modify, rank, recover, and check. (See **NOTES** for more details) This is all run through a custom shell built into a command line interface. 
+**Tetrashell** is a multi-faceted tetris quicksave modifier. Some features include modify, rank, recover, and check. (See **NOTES** for more details) This is all run through a custom shell built into a command line interface. 
 
 The CLI will look like this "(currentUser)@TShell[QuicksaveName][score/lines]>"
 

@@ -406,6 +406,9 @@ int main(int argc, char** argv){
                 }
         }
     }
+    free(savePath);
+    free(userInput);
+
 }
 
 

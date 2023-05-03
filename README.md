@@ -22,13 +22,16 @@ A user will be prompted with entering the path to their quicksave at the start o
 : This command calls the **check** program with the current quicksave to verify if it will pass legitimacy checks.
 
 **-rank** 
-: Rank the current quicksave with a database of other saves." <"Rank or 'r', 'ra', etc."> <'Score' or 'Lines'> and <"number of lines to return."> Can just input **rank** and will default to ten lines and sort by score.
+: Rank the current quicksave with a database of other saves." <"Rank or 'r', 'ra', etc."> <'Score' or 'Lines'> and <"number of lines to return."> Can just input **rank** and will default to 5 lines on either side of current file and sort by score.
 
 **-modify**
 Modifies the current save. Input <**Modify** or 'm', 'mo', etc.> <"Score or Lines"> <"Number to set value to">.
 
 **-switch**
 Switches the current save to the one you input. Input <**Switch**> <"Save path">.
+
+**-recover**
+Recovers a list of quicksaves found in a file provided by the user. Offers the option to switch to one of the recovered quicksaves.
 
 **-help**
 : type help to display a message on further instructions on how to use each feature in **tetrashell** Ex. 'help check'.

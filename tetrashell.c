@@ -23,9 +23,11 @@ char* modifyPath = "/playpen/a5/modify";
 void print_title(int num_spaces);
 char inputCheck(char *expected, char *input);
 char *getFirstFour(const char *str);
+char *switchFile(char* savePath, char* newPath);
 void printBoard(TetrisGameState tGame, char* savePath);
 bool vailidateSave(char* savePath);
 void printRank(int rankNum, char* fileName, char isBold);
+void printRec(int recNum, char* fileName, unsigned score, unsigned lines);
 void train();
 char* readInput();
 bool checkExit(const char *input);
@@ -153,25 +155,126 @@ int main(int argc, char** argv){
         int st;
         //TH: For easiest inputCheck impl, if first letter of input is r, need to differentiate between rank and recover
         if(tokens[0][0]=='r' && inputCheck("ecover", &tokens[0][1])){
-            pid_t pid = fork();
-            if (pid < 0) {
-                perror("fork");
-                return 1;
-            } else if (pid == 0){
-                st = execve(recoverPath, tokens, NULL);
-                if(st == -1){
-                    perror("execve");
-                    exit(1); //K.P: Kill the child process
-                    }
+                int fdsRec[2];
+                int fdsRecU[2];
+                if (pipe(fdsRec) == -1 || pipe(fdsRecU) == -1) {
+                        perror("pipe");
+                        exit(1);
                 }
-            else{
-                int status;
-                waitpid(pid, &status, 0);
-            }
+
+                pid_t pid = fork();
+
+                if (pid < 0) {
+                        perror("fork");
+                        return 1;
+                } else if (pid == 0){
+                //TH: Close read end of pipe
+                        close(fdsRec[0]);
+                        close(fdsRecU[0]);
+                        //TH: Redirect stdout of recover to pipe
+                        dup2(fdsRec[1], STDOUT_FILENO);
+                        dup2(fdsRecU[1], STDERR_FILENO);
+
+                        st = execve(recoverPath, tokens, NULL);
+                        if(st == -1){
+                            perror("execve");
+                            exit(1); //K.P: Kill the child process
+                        }
+                        close(fdsRec[1]);
+                        close(fdsRecU[1]);
+                } else {
+                        int status;
+                        waitpid(pid, &status, 0);
+
+                        close(fdsRec[1]);
+                        close(fdsRecU[0]);
+                        close(fdsRecU[0]);
+
+                        FILE* recoverFile = fdopen(fdsRec[0], "r");
+                        if (recoverFile == NULL) {
+                                perror("fdopen");
+                                exit(1);
+                        }
+
+                        char** recNames = malloc(sizeof(char*));
+                        int arrSz = 1;
+                        char* cur;
+
+                        int recNum = 0;
+                        char recLine[MAX_LINE_LENGTH];
+                        FILE* rf;
+                        TetrisGameState game;
+
+                        printf("Recovered quicksaves:\n");
+                        printf("-- ------------------------------ ------- -------\n");
+                        printf("#  File Path                      Score   Lines  \n");
+                        printf("-- ------------------------------ ------- -------\n");
+
+                        while (fgets(recLine, MAX_LINE_LENGTH, recoverFile)) {
+                                recLine[strcspn(recLine, "\n")] = '\0';
+
+                                rf = fopen(recLine, "r");
+                                if (rf==NULL) {
+                                        perror("fopen");
+                                        exit(1);
+                                }
+                                if (fread(&game, sizeof(game), 1, rf)==0) {
+                                        perror("fread");
+                                        exit(1);
+                                }
+                                fclose(rf);
+
+                                if (strlen(recLine) >= 28) {
+                                        recLine[47] = '\0';
+                                        strcat(recLine, "...");
+                                }
+
+                                if (recNum >= arrSz) {
+                                        recNames = realloc(recNames, 2 * arrSz * sizeof(char*));
+                                        arrSz = 2 * arrSz;
+                                }
+
+                                cur = malloc(MAX_LINE_LENGTH);
+                                strcpy(cur, recLine);
+                                recNames[recNum] = cur;
+
+                                printRec(++recNum, recLine, game.score, game.lines);
+
+                        }
+                        close(fdsRec[0]);
+
+                        printf("Would you like to switch to one of these (y/n): ");
+                        char response[MAX_LINE_LENGTH];
+                        fgets(response, MAX_LINE_LENGTH, stdin);
+                        if (strcmp(response, "n\n")==0) {
+                                continue;
+                        } else if (strcmp(response, "y\n")==0) {
+                                printf("Which quicksave (enter a # 1-%d): ", recNum);
+                                fgets(response, MAX_LINE_LENGTH, stdin);
+                                response[strcspn(response, "\n")] = '\0';
+                                int filen = atoi(response);
+                                if (filen < 1 || filen > recNum) {
+                                        printf("Invalid quicksave number");
+                                }
+                                printf("Done! ");
+                                savePath = switchFile(savePath, recNames[filen-1]);
+
+                                file = fopen(savePath, "rb");
+                                if (file==NULL) {
+                                        perror("fopen failed");
+                                        exit(1);
+                                }
+                                if((fread(&tGame, sizeof(tGame), 1, file)==0)) {
+                                        perror("fread failed");
+                                        exit(1);
+                                }
+                                fclose(file);
+                        }
+                }
         }
 
-       if(inputCheck("help", tokens[0])) {
-        if(tokens[1] != NULL){
+        if(inputCheck("help", tokens[0])) {
+            if(tokens[1] != NULL){
                 if(inputCheck("check", tokens[1])) {
                     printf("This command calls the `check` program with the current "
                         "quicksave to verify if it will pass legitimacy checks."
@@ -218,11 +321,7 @@ int main(int argc, char** argv){
             }
             else {
                 //K.P: copies new path into original buffer and then prints the switch.
-                char oldPath[MAX_LINE_LENGTH];
-                strncpy(oldPath, savePath, MAX_LINE_LENGTH);
-                strncpy(savePath, tokens[1], MAX_LINE_LENGTH);
-                savePath[MAX_LINE_LENGTH - 1] = '\0'; //K.P: Ensure null termination
-                printf("Switch current quicksave from %s to %s.\n", oldPath, savePath);
+                savePath = switchFile(savePath, tokens[1]);
 
                 //TH: Change tGame to new safeFile
                 file = fopen(savePath, "rb");
@@ -351,6 +450,11 @@ int main(int argc, char** argv){
                 write(fdsInit[1], savePath, strlen(savePath));
                 //K.P: Close the write end of the pipe
                 close(fdsInit[1]);
+
+                //K.P: Wait for the rank process to finish
+                int status;
+                waitpid(rank_pid, &status, 0);
+
                 char rankLine[MAX_LINE_LENGTH];
                 int fd = fdsFin[0];
                 FILE* rankFile = fdopen(fdsFin[0], "r");
@@ -434,9 +538,6 @@ int main(int argc, char** argv){
                 }
 
                 close(fdsFin[0]);
-                //K.P: Wait for the rank process to finish
-                int status;
-                waitpid(rank_pid, &status, 0);
             }
         }
         if (inputCheck("visualize", tokens[0])) {
@@ -540,6 +641,16 @@ char *getFirstFour(const char *str){
         firstFour[4] = '\0';
         return firstFour;
     }
+}
+
+char *switchFile(char* savePath, char* newPath) {
+        //K.P: copies new path into original buffer and then prints the switch.
+        char oldPath[MAX_LINE_LENGTH];
+        strncpy(oldPath, savePath, MAX_LINE_LENGTH);
+        strncpy(savePath, newPath, MAX_LINE_LENGTH);
+        savePath[MAX_LINE_LENGTH - 1] = '\0'; //K.P: Ensure null termination
+        printf("Switched current quicksave from %s to %s.\n", oldPath, savePath);
+        return savePath;
 }
 
 
@@ -647,6 +758,29 @@ char* intToBinary(int integer) {
     }
     binary[8] = '\0';
     return binary;
+}
+
+void printRec(int recNum, char* fileName, unsigned score, unsigned lines) {
+        char recStr[3];
+        sprintf(recStr, "%d", recNum);
+        printf("%s", recStr);
+        for (int i = strlen(recStr); i < 4; i++) {
+                putchar(' ');
+        }
+
+        printf("%s", fileName);
+        for (int j = strlen(fileName); j < 30; j++) {
+               putchar(' ');
+        }
+
+        char scoreStr[7];
+        sprintf(scoreStr, "%u", score);
+        printf("%s", scoreStr);
+        for (int n = strlen(scoreStr); n < 8; n++) {
+                putchar(' ');
+        }
+
+        printf("%u\n", lines);
 }
 
 void printRank(int rankNum, char* fileName, char isBold) {
@@ -804,3 +938,5 @@ void train() {
         printf("Thanks for playing.\n");
     }
 }
+
+
